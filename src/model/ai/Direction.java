@@ -3,34 +3,34 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package model.pathfinding;
+package model.ai;
 
 /**
  *
  * @author Václav
  */
-public enum Move {
+public enum Direction {
 
     UP(0), RIGHT(1), DOWN(2), LEFT(3);
     public final int x;
     private final static int ddx[] = {0, 1, 0, -1};
     private final static int ddy[] = {-1, 0, 1, 0};
 
-    Move(int x) {
+    Direction(int x) {
         this.x = x;
     }
 
-    public static Move intToMove(final int i) {
-        for (Move m : Move.values())
+    public static Direction intToMove(final int i) {
+        for (Direction m : Direction.values())
             if (m.x == i) return m;
         return null;
     }
 
-    public Move turnLeft() {
+    public Direction turnLeft() {
         return intToMove((x + 3) % 4);
     }
 
-    public Move turnRight() {
+    public Direction turnRight() {
         return intToMove((x + 1) % 4);
     }
 
@@ -41,9 +41,16 @@ public enum Move {
     public int deltaY() {
         return ddy[x];
     }
-    
-    public char toChar(){
+
+    public char toChar() {
         char[] res = {'^', '>', 'v', '<'};
         return res[x];
+    }
+
+    public int rotationTo(Direction b) {
+        int val = b.x - x;
+        if (val == 3) val = -1;
+        if (val == -3) val = 1;
+        return val;
     }
 }
