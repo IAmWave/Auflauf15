@@ -12,8 +12,7 @@ import java.io.FileInputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Random;
-import model.pathfinding.Path;
-import model.pathfinding.Move;
+import model.ai.Direction;
 
 /**
  *
@@ -163,29 +162,5 @@ public class Map {
     public boolean walkable(int x, int y) {
         return (x >= 0) && (y >= 0) && (x < WIDTH) && (y < HEIGHT)
                 && (values[x][y] != Tile.WALL);
-    }
-
-    public Path findPath(int x1, int y1, int x2, int y2, Move rot) {
-        ArrayList<Move> res = new ArrayList<>();
-
-        while (x1 != x2 || y1 != y2) {
-            Move[] order = {rot, rot.turnLeft(), rot.turnRight(), rot.turnRight().turnRight()};
-            for (int i = 0; i < 4; i++) {
-                int x = x1 + order[i].deltaX();
-                int y = y1 + order[i].deltaY();
-                if (walkable(x, y) && matrix[x1][y1][x2][y2] > matrix[x][y][x2][y2]) {
-                    res.add(order[i]);
-                    rot = order[i];
-                    x1 = x;
-                    y1 = y;
-                    break;
-                }
-            }
-        }
-        return new Path(res);
-    }
-
-    public Path findPath(int x1, int y1, int x2, int y2) {
-        return findPath(x1, y1, x2, y2, Move.UP);
     }
 }
