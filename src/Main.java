@@ -2,8 +2,8 @@
 import controller.Controller;
 import controller.RobotController;
 import lejos.nxt.Button;
-import model.ai.Exploration;
-import model.ai.Move;
+import model.Exploration;
+import model.Move;
 
 public class Main {
 
@@ -21,10 +21,10 @@ public class Main {
             Move next = e.decide();
             c.turn(e.getRotation().rotationTo(next.dir));
             e.setRotation(next.dir);
-            //move bude zároveň průběžně hlásit Explorationu data ze skeneru a případně to, kde narazil.
+            //move bude zaroven prubezne hlasit Exploreru data ze skenu a pripadne kde narazil.
             //Hašení se přenechává výhradně RobotControlleru.
             c.move(next.tiles);
-            //s aktualizovanými daty začne cyklus znovu
+            //s aktualizovanymi daty zacne cyklus znovu
         }
     }
 }

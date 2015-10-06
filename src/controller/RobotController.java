@@ -7,7 +7,7 @@ package controller;
 
 import lejos.nxt.Motor;
 import lejos.nxt.NXTRegulatedMotor;
-import model.ai.Exploration;
+import model.Exploration;
 
 /**
  *

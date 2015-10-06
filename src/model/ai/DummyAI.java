@@ -5,20 +5,22 @@
  */
 package model.ai;
 
+import model.Exploration;
+import model.Move;
+
 /**
  *
  * @author Václav
  */
-public class ExplorationTile {
+public class DummyAI extends AI {
 
-    public double wall = 0.5;
-    public boolean visited = false;
-
-    public ExplorationTile() {
+    public DummyAI(Exploration exp){
+        super(exp);
     }
-
-    public ExplorationTile(boolean isWall) {
-        wall = isWall ? 1 : 0;
-        visited = true;
+    
+    @Override
+    public Move decide() {
+        return new Move(exp.getRotation().turnRight(), 10);
     }
+    
 }
