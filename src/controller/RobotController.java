@@ -32,7 +32,7 @@ public class RobotController implements Controller {
         //v budoucnu: skenovat, výsledek nahlásit exp
     }
     
-    public void turn(int times){
+    public void turn(int times){//times>0 => doprava
         left.rotate(-720, true);
         right.rotate(720, true);
     }
