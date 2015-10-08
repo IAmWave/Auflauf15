@@ -4,6 +4,7 @@ import lejos.nxt.Motor;
 import lejos.nxt.NXTRegulatedMotor;
 import lejos.util.Delay;
 import model.ai.Exploration;
+import model.Exploration;
 
 /**
  *

@@ -3,9 +3,10 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package model.ai;
+package model;
 
-import model.Map;
+import model.ai.AI;
+import model.ai.DummyAI;
 
 /**
  *
@@ -19,15 +20,18 @@ public class Exploration {
     int x = Map.START_X;
     int y = Map.START_Y;
     Direction rot = Direction.UP;
-
+    
+    AI ai;
+    
     public Exploration() {
         map[Map.START_X - 1][Map.START_Y + 1] = new ExplorationTile(true);
         map[Map.START_X][Map.START_Y + 1] = new ExplorationTile(true);
         map[Map.START_X + 1][Map.START_Y + 1] = new ExplorationTile(true);
+        ai = new DummyAI(this);
     }
 
     public Move decide() {
-        return new Move(Direction.LEFT, 3);
+        return ai.decide();
     }
     
     public Direction getRotation(){
