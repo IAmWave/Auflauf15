@@ -1,42 +1,42 @@
 
 import controller.Controller;
+import controller.EmulatedController;
 import controller.RobotController;
 import lejos.nxt.Button;
-import lejos.nxt.Sound;
 import model.Exploration;
 import model.Move;
 
 public class Main {
 
     public static void main(String[] args) {
-        new Thread() {
-            public void run() {
-                while (true) {
-                    if (Button.readButtons() != 0) {
-                        System.exit(0);
+        Exploration e = new Exploration();
+        Controller c = new EmulatedController(e);
+        if (c.getClass() == RobotController.class) {
+            new Thread() {
+                public void run() {
+                    while (true) {
+                        if (Button.readButtons() != 0) {
+                            System.exit(0);
+                        }
+                        Thread.yield();
                     }
-                    Thread.yield();
                 }
-            }
-        }.start();
-        new RobotController(null).move(2);
-        //go();
+            }.start();
+        }
+        go(e, c);
     }
 
-    public static void go() { //hlavní metoda
-        Exploration e = new Exploration();
-        Controller c = new RobotController(e);
-
+    public static void go(Exploration e, Controller c) { //hlavní metoda
         //todo: vyjet ze startu před cyklem
-        while (Button.readButtons() == 0) {
+        while (c.shouldContinue()) {
             Move next = e.decide();
             c.turn(e.getRotation().rotationTo(next.dir));
             e.setRotation(next.dir);
             //move bude zaroven prubezne hlasit Exploreru data ze skenu a pripadne kde narazil.
             //Hašení se přenechává výhradně RobotControlleru.
             c.move(next.tiles);
-            Sound.twoBeeps();
             //s aktualizovanymi daty zacne cyklus znovu
         }
+        c.onFinish();
     }
 }

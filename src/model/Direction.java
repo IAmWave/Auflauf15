@@ -12,43 +12,43 @@ package model;
 public enum Direction {
 
     UP(0), RIGHT(1), DOWN(2), LEFT(3);
-    public final int x;
+    public final int n;
     private final static int ddx[] = {0, 1, 0, -1};
     private final static int ddy[] = {-1, 0, 1, 0};
 
     Direction(int x) {
-        this.x = x;
+        this.n = x;
     }
 
     public static Direction intToMove(final int i) {
         for (Direction m : Direction.values())
-            if (m.x == i) return m;
+            if (m.n == i) return m;
         return null;
     }
 
     public Direction turnLeft() {
-        return intToMove((x + 3) % 4);
+        return intToMove((n + 3) % 4);
     }
 
     public Direction turnRight() {
-        return intToMove((x + 1) % 4);
+        return intToMove((n + 1) % 4);
     }
 
     public int deltaX() {
-        return ddx[x];
+        return ddx[n];
     }
 
     public int deltaY() {
-        return ddy[x];
+        return ddy[n];
     }
 
     public char toChar() {
         char[] res = {'^', '>', 'v', '<'};
-        return res[x];
+        return res[n];
     }
 
     public int rotationTo(Direction b) {
-        int val = b.x - x;
+        int val = b.n - n;
         if (val == 3) val = -1;
         if (val == -3) val = 1;
         return val;

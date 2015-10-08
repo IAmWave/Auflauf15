@@ -1,9 +1,9 @@
 package controller;
 
+import lejos.nxt.Button;
 import lejos.nxt.Motor;
 import lejos.nxt.NXTRegulatedMotor;
 import lejos.util.Delay;
-import model.ai.Exploration;
 import model.Exploration;
 
 /**
@@ -113,5 +113,14 @@ public class RobotController implements Controller {
                 break;
             }
         }
+    }
+    
+    @Override
+    public boolean shouldContinue(){
+        return Button.readButtons() == 0;
+    }
+    
+    public void onFinish(){
+        
     }
 }

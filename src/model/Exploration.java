@@ -27,6 +27,7 @@ public class Exploration {
         map[Map.START_X - 1][Map.START_Y + 1] = new ExplorationTile(true);
         map[Map.START_X][Map.START_Y + 1] = new ExplorationTile(true);
         map[Map.START_X + 1][Map.START_Y + 1] = new ExplorationTile(true);
+        map[Map.START_X][Map.START_Y] = new ExplorationTile(false);
         ai = new DummyAI(this);
     }
 
@@ -68,6 +69,7 @@ public class Exploration {
     }
 
     public void setTile(int x, int y, ExplorationTile tile) {
+        if(!inBounds(x, y)) return;
         map[x][y] = tile;
     }
 
@@ -79,5 +81,25 @@ public class Exploration {
         if (!inBounds(x, y)) return false;
         if (map[x][y].wall == 1) return false;
         return true;
+    }
+
+    public int getX() {
+        return x;
+    }
+
+    public int getY() {
+        return y;
+    }
+
+    public void setX(int x) {
+        this.x = x;
+    }
+
+    public void setY(int y) {
+        this.y = y;
+    }
+    
+    public void print(){
+        
     }
 }

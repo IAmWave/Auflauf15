@@ -5,12 +5,10 @@
  */
 package model;
 
-import java.awt.Point;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
 import java.util.Random;
 
 /**
@@ -63,6 +61,10 @@ public class Map {
         return values[x][y];
     }
 
+    public void setTileAt(int x, int y, Tile to){
+        values[x][y] = to;
+    }
+    
     public Tile[][] getTiles() {
         Tile[][] res = new Tile[WIDTH][HEIGHT];
         for (int x = 0; x < WIDTH; x++) for (int y = 0; y < HEIGHT; y++) {
@@ -115,14 +117,7 @@ public class Map {
         calculateDistanceMatrix();
     }
 
-    public void print() {
-        for (int y = 0; y < HEIGHT; y++) {
-            for (int x = 0; x < WIDTH; x++) {
-                System.out.print(values[x][y].toChar());
-            }
-            System.out.println();
-        }
-    }
+    
 
     public int[][][][] getDistanceMatrix() {
         return matrix;
