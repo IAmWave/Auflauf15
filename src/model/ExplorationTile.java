@@ -21,4 +21,13 @@ public class ExplorationTile {
         wall = isWall ? 1 : 0;
         visited = true;
     }
+
+    public char toChar() {
+        if (wall == 1) return '#';
+        if (visited) return ' ';
+        if (wall == 0) return '.';
+        if (wall == 0.5) return '?';
+        if (wall < 0.5) return ',';
+        return 'X';
+    }
 }

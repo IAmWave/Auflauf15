@@ -20,10 +20,15 @@ public class Exploration {
     int x = Map.START_X;
     int y = Map.START_Y;
     Direction rot = Direction.UP;
-    
+
     AI ai;
-    
-    public Exploration() {
+
+    public Exploration() {        
+        for (int x = 0; x < Map.WIDTH; x++) {
+            for (int y = 0; y < Map.HEIGHT; y++) {
+                map[x][y] = new ExplorationTile();
+            }
+        }
         map[Map.START_X - 1][Map.START_Y + 1] = new ExplorationTile(true);
         map[Map.START_X][Map.START_Y + 1] = new ExplorationTile(true);
         map[Map.START_X + 1][Map.START_Y + 1] = new ExplorationTile(true);
@@ -34,15 +39,15 @@ public class Exploration {
     public Move decide() {
         return ai.decide();
     }
-    
-    public Direction getRotation(){
+
+    public Direction getRotation() {
         return rot;
     }
 
-    public void setRotation(Direction to){
+    public void setRotation(Direction to) {
         rot = to;
     }
-    
+
     public void handleScan(int sx, int sy, Direction dir, int value) { //value = počet políček před zdí
         int cx = sx, cy = sy;
         for (int i = 0; i < value; i++) {
@@ -69,7 +74,7 @@ public class Exploration {
     }
 
     public void setTile(int x, int y, ExplorationTile tile) {
-        if(!inBounds(x, y)) return;
+        if (!inBounds(x, y)) return;
         map[x][y] = tile;
     }
 
@@ -98,8 +103,16 @@ public class Exploration {
     public void setY(int y) {
         this.y = y;
     }
-    
-    public void print(){
-        
+
+    public void print() {
+        System.out.println(" ---------");
+        for (int y = 0; y < Map.HEIGHT; y++) {
+            System.out.print("|");
+            for (int x = 0; x < Map.WIDTH; x++) {
+                System.out.print(map[x][y].toChar());
+            }
+            System.out.println("|");
+        }
+        System.out.println(" ---------");
     }
 }

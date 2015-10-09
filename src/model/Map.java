@@ -50,11 +50,9 @@ public class Map {
     //</editor-fold>
 
     private Tile[][] values = new Tile[WIDTH][HEIGHT];
-    private int[][][][] matrix = new int[WIDTH][HEIGHT][WIDTH][HEIGHT];
-
+    
     public Map(Tile[][] values) {
         this.values = values;
-        calculateDistanceMatrix();
     }
 
     public Tile tileAt(int x, int y) {
@@ -114,43 +112,6 @@ public class Map {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        calculateDistanceMatrix();
-    }
-
-    
-
-    public int[][][][] getDistanceMatrix() {
-        return matrix;
-    }
-
-    public final void calculateDistanceMatrix() {
-        final int INF = 1000;
-        for (int a = 0; a < N; a++) for (int b = 0; b < N; b++) {
-                matrix[a % WIDTH][a / WIDTH][b % WIDTH][b / WIDTH] = (a == b) ? 0 : (INF);
-            }
-
-        for (int x = 0; x < WIDTH; x++) for (int y = 0; y < HEIGHT; y++) {
-                if (values[x][y] == Tile.WALL) continue;
-
-                if (x > 0 && values[x - 1][y] != Tile.WALL)
-                    matrix[x][y][x - 1][y] = 1;
-                if (x < WIDTH - 1 && values[x + 1][y] != Tile.WALL)
-                    matrix[x][y][x + 1][y] = 1;
-                if (y > 0 && values[x][y - 1] != Tile.WALL)
-                    matrix[x][y][x][y - 1] = 1;
-                if (y < HEIGHT - 1 && values[x][y + 1] != Tile.WALL)
-                    matrix[x][y][x][y + 1] = 1;
-            }
-
-        for (int k = 0; k < N; k++) for (int i = 0; i < N; i++) for (int j = 0; j < N; j++) {
-                    if (values[k % WIDTH][k / WIDTH] == Tile.WALL) continue;
-                    if (values[i % WIDTH][i / WIDTH] == Tile.WALL) continue;
-                    if (values[j % WIDTH][j / WIDTH] == Tile.WALL) continue;
-                    matrix[i % WIDTH][i / WIDTH][j % WIDTH][j / WIDTH]
-                            = Math.min(matrix[i % WIDTH][i / WIDTH][j % WIDTH][j / WIDTH],
-                                    matrix[i % WIDTH][i / WIDTH][k % WIDTH][k / WIDTH]
-                                    + matrix[k % WIDTH][k / WIDTH][j % WIDTH][j / WIDTH]);
-                }
     }
 
     public boolean walkable(int x, int y) {
