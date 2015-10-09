@@ -53,7 +53,9 @@ public class Exploration {
         for (int i = 0; i < value; i++) {
             cx += dir.deltaX();
             cy += dir.deltaY();
-            if (!possiblyFree(cx, cy)) return;
+            if (!possiblyFree(cx, cy)) {
+                return;
+            }
         }
         cx = sx;
         cy = sy;
@@ -83,8 +85,12 @@ public class Exploration {
     }
 
     private boolean possiblyFree(int x, int y) {
-        if (!inBounds(x, y)) return false;
-        if (map[x][y].wall == 1) return false;
+        if (!inBounds(x, y)) {
+            return false;
+        }
+        if (map[x][y].wall == 1) {
+            return false;
+        }
         return true;
     }
 
