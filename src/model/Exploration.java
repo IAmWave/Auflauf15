@@ -20,10 +20,15 @@ public class Exploration {
     int x = Map.START_X;
     int y = Map.START_Y;
     Direction rot = Direction.UP;
-    
+
     AI ai;
-    
+
     public Exploration() {
+        for (int y = 0; y < Map.HEIGHT; y++) {
+            for (int x = 0; x < Map.WIDTH; x++) {
+                map[x][y] = new ExplorationTile();
+            }
+        }
         map[Map.START_X - 1][Map.START_Y + 1] = new ExplorationTile(true);
         map[Map.START_X][Map.START_Y + 1] = new ExplorationTile(true);
         map[Map.START_X + 1][Map.START_Y + 1] = new ExplorationTile(true);
@@ -34,21 +39,23 @@ public class Exploration {
     public Move decide() {
         return ai.decide();
     }
-    
-    public Direction getRotation(){
+
+    public Direction getRotation() {
         return rot;
     }
 
-    public void setRotation(Direction to){
+    public void setRotation(Direction to) {
         rot = to;
     }
-    
+
     public void handleScan(int sx, int sy, Direction dir, int value) { //value = počet políček před zdí
         int cx = sx, cy = sy;
         for (int i = 0; i < value; i++) {
             cx += dir.deltaX();
             cy += dir.deltaY();
-            if (!possiblyFree(cx, cy)) return;
+            if (!possiblyFree(cx, cy)) {
+                return;
+            }
         }
         cx = sx;
         cy = sy;
@@ -69,7 +76,9 @@ public class Exploration {
     }
 
     public void setTile(int x, int y, ExplorationTile tile) {
-        if(!inBounds(x, y)) return;
+        if (!inBounds(x, y)) {
+            return;
+        }
         map[x][y] = tile;
     }
 
@@ -78,8 +87,12 @@ public class Exploration {
     }
 
     private boolean possiblyFree(int x, int y) {
-        if (!inBounds(x, y)) return false;
-        if (map[x][y].wall == 1) return false;
+        if (!inBounds(x, y)) {
+            return false;
+        }
+        if (map[x][y].wall == 1) {
+            return false;
+        }
         return true;
     }
 
@@ -98,8 +111,20 @@ public class Exploration {
     public void setY(int y) {
         this.y = y;
     }
-    
-    public void print(){
-        
+
+    public void print() {
+        for (int y = 0; y < Map.HEIGHT; y++) {
+            for (int x = 0; x < Map.WIDTH; x++) {
+                if (map[x][y].wall == 1) {
+                    System.out.print("#");
+                } else if (map[x][y].wall == 0) {
+                    System.out.print(".");
+                } else {
+                    System.out.print("?");
+                }
+            }
+            System.out.println();
+        }
+        System.out.println();
     }
 }

@@ -1,5 +1,5 @@
 nxjc Main.java
-nxjc */*.java
+#nxjc */*.java
 nxjlink -o Main.nxj Main
 rm *.class
 rm */*.class

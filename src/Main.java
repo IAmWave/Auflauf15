@@ -1,6 +1,5 @@
 
 import controller.Controller;
-import controller.EmulatedController;
 import controller.RobotController;
 import lejos.nxt.Button;
 import model.Exploration;
@@ -10,8 +9,9 @@ public class Main {
 
     public static void main(String[] args) {
         Exploration e = new Exploration();
-        Controller c = new EmulatedController(e);
-        if (c.getClass() == RobotController.class) {
+        e.print();
+        RobotController c = new RobotController(e);
+        /*if (c.getClass() == RobotController.class) {
             new Thread() {
                 public void run() {
                     while (true) {
@@ -22,7 +22,7 @@ public class Main {
                     }
                 }
             }.start();
-        }
+        }*/
         go(e, c);
     }
 
