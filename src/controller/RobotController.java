@@ -68,15 +68,15 @@ public class RobotController implements Controller {
 
         int tilesFinished = Math.abs((int) Math.round((left.getTachoCount() - deg + 0.0) / DEG_TILE));
         for (int i = 0; i < tilesFinished; i++) {
-            x += exp.getRotation().deltaX();
-            y += exp.getRotation().deltaY();
+            x += exp.getDirection().deltaX();
+            y += exp.getDirection().deltaY();
             exp.setTile(x, y, new ExplorationTile(false));
         }
         exp.setX(x);
         exp.setY(y);
         if (touch.isPressed()) {
-            x += exp.getRotation().deltaX();
-            y += exp.getRotation().deltaY();
+            x += exp.getDirection().deltaX();
+            y += exp.getDirection().deltaY();
             exp.setTile(x, y, new ExplorationTile(true));
             Delay.msDelay(100);
             left.setSpeed(FROM_WALL_SPEED);
@@ -128,13 +128,15 @@ public class RobotController implements Controller {
         return Button.readButtons() == 0;
     }
 
+    @Override
+    public void onStart(){ //vyjede ze startu
+        move(1);
+    }
+    
+    @Override
     public void onFinish() {
         exp.print();
         Delay.msDelay(1000);
         Button.waitForAnyPress();
-    }
-    
-    public void moveFromStart(){
-        move(1);
     }
 }

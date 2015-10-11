@@ -6,7 +6,7 @@
 package model;
 
 import model.ai.AI;
-import model.ai.DummyAI;
+import model.ai.GreedyAI;
 
 /**
  *
@@ -14,6 +14,9 @@ import model.ai.DummyAI;
  */
 public class Exploration {
 
+    public static final double MOVE_COST = 1.5;
+    public static final double TURN_COST = 1;
+    
     public static final double SCAN_FREE_COEF = 0.3;
     public static final double SCAN_WALL_COEF = 0.3;
     ExplorationTile[][] map = new ExplorationTile[Map.WIDTH][Map.HEIGHT];
@@ -23,7 +26,7 @@ public class Exploration {
 
     AI ai;
 
-    public Exploration() {        
+    public Exploration() {
         for (int x = 0; x < Map.WIDTH; x++) {
             for (int y = 0; y < Map.HEIGHT; y++) {
                 map[x][y] = new ExplorationTile();
@@ -33,14 +36,14 @@ public class Exploration {
         map[Map.START_X][Map.START_Y + 1] = new ExplorationTile(true);
         map[Map.START_X + 1][Map.START_Y + 1] = new ExplorationTile(true);
         map[Map.START_X][Map.START_Y] = new ExplorationTile(false);
-        ai = new DummyAI(this);
+        ai = new GreedyAI(this);
     }
 
     public Move decide() {
         return ai.decide();
     }
 
-    public Direction getRotation() {
+    public Direction getDirection() {
         return rot;
     }
 
@@ -71,7 +74,7 @@ public class Exploration {
         }
     }
 
-    public ExplorationTile getTile(int x, int y) {
+    public ExplorationTile tileAt(int x, int y) {
         return map[x][y];
     }
 
@@ -80,11 +83,18 @@ public class Exploration {
         map[x][y] = tile;
     }
 
-    private boolean inBounds(int x, int y) {
+    public static boolean inBounds(int x, int y) {
         return !(x < 0 || y < 0 || x >= Map.WIDTH || y >= Map.HEIGHT);
     }
 
-    private boolean possiblyFree(int x, int y) {
+    public boolean shouldVisit(int x, int y) {
+        if (!possiblyFree(x, y)) return false;
+        if (map[x][y].visited) return false;
+        if (map[x][y].wall <= 0.5) return true;
+        return false;
+    }
+
+    public boolean possiblyFree(int x, int y) {
         if (!inBounds(x, y)) {
             return false;
         }
@@ -115,7 +125,11 @@ public class Exploration {
         for (int y = 0; y < Map.HEIGHT; y++) {
             System.out.print("|");
             for (int x = 0; x < Map.WIDTH; x++) {
-                System.out.print(map[x][y].toChar());
+                if (x == getX() && y == getY()) {
+                    System.out.print(getDirection().toChar());
+                } else {
+                    System.out.print(map[x][y].toChar());
+                }
             }
             System.out.println("|");
         }

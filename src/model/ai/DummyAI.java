@@ -20,7 +20,7 @@ public class DummyAI extends AI {
     
     @Override
     public Move decide() {
-        return new Move(exp.getRotation().turnRight(), 10);
+        return new Move(exp.getDirection().turnRight(), 10);
     }
     
 }

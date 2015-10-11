@@ -20,18 +20,18 @@ public enum Direction {
         this.n = x;
     }
 
-    public static Direction intToMove(final int i) {
+    public static Direction fromInt(final int i) {
         for (Direction m : Direction.values())
             if (m.n == i) return m;
         return null;
     }
 
     public Direction turnLeft() {
-        return intToMove((n + 3) % 4);
+        return fromInt((n + 3) % 4);
     }
 
     public Direction turnRight() {
-        return intToMove((n + 1) % 4);
+        return fromInt((n + 1) % 4);
     }
 
     public int deltaX() {
