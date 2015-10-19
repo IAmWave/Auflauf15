@@ -5,9 +5,9 @@ import lejos.nxt.Button;
 import lejos.nxt.Motor;
 import lejos.nxt.NXTRegulatedMotor;
 import lejos.nxt.SensorPort;
-import lejos.nxt.Sound;
 import lejos.nxt.TouchSensor;
 import lejos.nxt.UltrasonicSensor;
+import lejos.nxt.comm.RConsole;
 import lejos.util.Delay;
 import model.Exploration;
 import model.ExplorationTile;
@@ -18,6 +18,7 @@ import util.UltrasonicPair;
  * @author Václav
  */
 public class RobotController implements Controller {
+
     TouchSensor touchL = new TouchSensor(SensorPort.S1);
     TouchSensor touchR = new TouchSensor(SensorPort.S2);
     UltrasonicSensor sonic = new UltrasonicSensor(SensorPort.S4);
@@ -29,18 +30,24 @@ public class RobotController implements Controller {
     final int MIN_SPEED = 100;
     final int DEG_TILE = 400;
     final int DEG_TURN_90 = 182;
-    final int DEG_TURN_180 = 364;
-    final int ACCELERATION = 20;
+    final int DEG_TURN_180 = 366;
+    final int ACCELERATION = 25;
     final int DECCELERATION_TIME = 70;
     final int FROM_WALL = 70;
     final int FROM_WALL_SPEED = 100;
     final int SLOW_DOWN_AT = 200;
-    
+
     Exploration exp;
 
     public RobotController(Exploration exp) {
+        RConsole.openUSB(5000);
         this.exp = exp;
         exp.print();
+        //KALIBROVACI CYKLUS
+        /*for (int i = 0; i < 10; i++) {
+         turn(2);
+         }
+         System.exit(0);*/
     }
 
     @Override
@@ -48,6 +55,11 @@ public class RobotController implements Controller {
         ArrayList<UltrasonicPair> sonicData = new ArrayList<>();
         int x = exp.getX();
         int y = exp.getY();
+        //COUVANI PRED JIZDOU
+        /*if(exp.tileAt(x-exp.getDirection().deltaX(), y-exp.getDirection().deltaY()).wall==1){
+         left.rotate(-50);
+         right.rotate(-50);
+         }*/
         left.rotate(-DEG_TILE * tiles, true);
         right.rotate(-DEG_TILE * tiles, true);
         int deg = left.getTachoCount();
@@ -55,9 +67,16 @@ public class RobotController implements Controller {
         left.setSpeed(1);
         right.setSpeed(1);
         boolean accelerate = true;
+        boolean read = true;
         while (left.isMoving() && !touchR.isPressed()) {
             //ODKOMENTOVAT = NEZPOMALUJE PLYNULE! ČÍST MÉNĚ ČASTO?
-            //sonicData.add(new UltrasonicPair(Math.abs(targetDeg - left.getTachoCount()), sonic.getDistance()));
+            if (read) {
+                sonicData.add(new UltrasonicPair(Math.abs(targetDeg - left.getTachoCount()), sonic.getDistance()));
+                RConsole.println(sonicData.get(sonicData.size()- 1).getDeg() + " " + sonicData.get(sonicData.size()- 1).getValue());
+                read = false;
+            } else {
+                read = true;
+            }
             if (accelerate && left.getSpeed() < this.MAX_SPEED) {
                 right.setSpeed(left.getSpeed() + ACCELERATION);
                 left.setSpeed(left.getSpeed() + ACCELERATION);
@@ -81,12 +100,12 @@ public class RobotController implements Controller {
             exp.setTile(x, y, new ExplorationTile(false));
             //POCITANI ULTRASONIC DAT
             /*int centerDeg = i * DEG_TILE - DEG_TILE / 2;
-            ArrayList<UltrasonicPair> tileData = new ArrayList<>();
-            for (int j = 0; j < sonicData.size(); j++) {
-                if (sonicData.get(j).getDeg() >= centerDeg - (DEG_TILE * 2) / 3 && sonicData.get(j).getDeg() <= centerDeg + DEG_TILE / 3) {
-                    tileData.add(sonicData.get(j));
-                }
-            }*/
+             ArrayList<UltrasonicPair> tileData = new ArrayList<>();
+             for (int j = 0; j < sonicData.size(); j++) {
+             if (sonicData.get(j).getDeg() >= centerDeg - (DEG_TILE * 2) / 3 && sonicData.get(j).getDeg() <= centerDeg + DEG_TILE / 3) {
+             tileData.add(sonicData.get(j));
+             }
+             }*/
             //TODO:
             //NAJIT MEDIAN V TILEDATA A ZAPSAT JAKO SPRAVNOU VZDALENOST DO MAPY
         }
@@ -102,10 +121,11 @@ public class RobotController implements Controller {
             left.rotate(FROM_WALL, true);
             right.rotate(FROM_WALL, false);
         }
+        System.out.println(sonicData.size());
         //VÝPIS EXTRÉMNĚ ZPOMALUJE
         /*for (int i = 0; i < sonicData.size(); i++) {
-            System.out.println("DEG: " + sonicData.get(i).getDeg() + " DIST: " + sonicData.get(i).getValue());
-        }*/
+         System.out.println("DEG: " + sonicData.get(i).getDeg() + " DIST: " + sonicData.get(i).getValue());
+         }*/
         //System.out.println("TILES FINISHED: " + tilesFinished);
     }
 
@@ -152,7 +172,7 @@ public class RobotController implements Controller {
 
     @Override
     public void onStart() { //vyjede ze startu
-        exp.setY(exp.getY()+1); //jinak si mysli, ze je vys
+        exp.setY(exp.getY() + 1); //jinak si mysli, ze je vys
         move(1);
     }
 
