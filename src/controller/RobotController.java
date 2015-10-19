@@ -1,17 +1,14 @@
 package controller;
 
-import java.util.ArrayList;
 import lejos.nxt.Button;
 import lejos.nxt.Motor;
 import lejos.nxt.NXTRegulatedMotor;
 import lejos.nxt.SensorPort;
 import lejos.nxt.Sound;
 import lejos.nxt.TouchSensor;
-import lejos.nxt.UltrasonicSensor;
 import lejos.util.Delay;
 import model.Exploration;
 import model.ExplorationTile;
-import util.UltrasonicPair;
 
 /**
  *
@@ -20,7 +17,6 @@ import util.UltrasonicPair;
 public class RobotController implements Controller {
 
     TouchSensor touch = new TouchSensor(SensorPort.S2);
-    UltrasonicSensor sonic = new UltrasonicSensor(SensorPort.S2);
     NXTRegulatedMotor magnet = Motor.A;
     NXTRegulatedMotor left = Motor.B;
     NXTRegulatedMotor right = Motor.C;
@@ -43,7 +39,6 @@ public class RobotController implements Controller {
     }
 
     public void move(int tiles) {
-        ArrayList<UltrasonicPair> sonicData = new ArrayList<>();
         int x = exp.getX();
         int y = exp.getY();
         left.rotate(-DEG_TILE * tiles, true);
@@ -55,7 +50,6 @@ public class RobotController implements Controller {
         right.setSpeed(1);
         boolean accelerate = true;
         while (left.isMoving() && !touch.isPressed()) {
-            sonicData.add(new UltrasonicPair(Math.abs(targetDeg - left.getTachoCount()), sonic.getDistance()));
             if (accelerate && left.getSpeed() < this.MAX_SPEED) {
                 right.setSpeed(left.getSpeed() + ACCELERATION);
                 left.setSpeed(left.getSpeed() + ACCELERATION);
@@ -77,16 +71,6 @@ public class RobotController implements Controller {
             x += exp.getDirection().deltaX();
             y += exp.getDirection().deltaY();
             exp.setTile(x, y, new ExplorationTile(false));
-            //POCITANI ULTRASONIC DAT
-            int centerDeg = i * DEG_TILE - DEG_TILE / 2;
-            ArrayList<UltrasonicPair> tileData = new ArrayList<>();
-            for (int j = 0; j < sonicData.size(); j++) {
-                if (sonicData.get(j).getDeg() >= centerDeg - (DEG_TILE * 2) / 3 && sonicData.get(j).getDeg() <= centerDeg + DEG_TILE / 3) {
-                    tileData.add(sonicData.get(j));
-                }
-            }
-            //TODO:
-            //NAJIT MEDIAN V TILEDATA A ZAPSAT JAKO SPRAVNOU VZDALENOST DO MAPY
         }
         exp.setX(x);
         exp.setY(y);
@@ -100,9 +84,7 @@ public class RobotController implements Controller {
             left.rotate(FROM_WALL, true);
             right.rotate(FROM_WALL, false);
         }
-        for (int i = 0; i < sonicData.size(); i++) {
-            System.out.println("DEG: " + sonicData.get(i).getDeg() + " DIST: " + sonicData.get(i).getValue());
-        }
+
         //System.out.println("TILES FINISHED: " + tilesFinished);
     }
 
@@ -114,8 +96,8 @@ public class RobotController implements Controller {
             left.rotate(DEG_TURN_90 * times, true);
             right.rotate(-DEG_TURN_90 * times, true);
         } else {
-            targetDeg = left.getTachoCount() + DEG_TURN_180 * times / 2;
-            left.rotate(DEG_TURN_180 * times / 2, true);
+            targetDeg = left.getTachoCount() + DEG_TURN_180 * times/2;
+            left.rotate(DEG_TURN_180 * times/2, true);
             right.rotate(-DEG_TURN_180 * times / 2, true);
         }
         boolean accelerate = true;
@@ -147,10 +129,10 @@ public class RobotController implements Controller {
     }
 
     @Override
-    public void onStart() { //vyjede ze startu
+    public void onStart(){ //vyjede ze startu
         move(1);
     }
-
+    
     @Override
     public void onFinish() {
         exp.print();
