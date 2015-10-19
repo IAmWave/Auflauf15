@@ -7,9 +7,6 @@ package model.ai;
 
 import java.awt.Point;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.PriorityQueue;
 import model.Direction;
 import model.Exploration;
 import model.Map;
@@ -69,14 +66,19 @@ public abstract class AI {
         }
         if (path.isEmpty() || !path.get(path.size() - 1).equals(new Point(x, y)))
             path.add(new Point(x, y));
-        Collections.reverse(path);
-        return path.toArray(new Point[0]);
+
+        //Reverse
+        Point[] res = new Point[path.size()];
+        for (int i = 0; i < path.size(); i++) {
+            res[i] = path.get(path.size() - 1 - i);
+        }
+        return path.toArray(res);
     }
 
     public void printMatrix() {
         for (int y = 0; y < Map.HEIGHT; y++) {
             for (int x = 0; x < Map.WIDTH; x++) {
-                System.out.printf("%.1f\t", matrix[x][y]);
+                //System.out.printf("%.1f\t", matrix[x][y]);
             }
             System.out.println();
         }
@@ -92,19 +94,13 @@ public abstract class AI {
         }
         matrix[exp.getX()][exp.getY()][exp.getDirection().n] = 0;
         fromMatrix[exp.getX()][exp.getY()][exp.getDirection().n] = null;
-        PriorityQueue<State> q = new PriorityQueue(11, new Comparator() {
-            @Override
-            public int compare(Object o1, Object o2) {
-                State a = (State) o1;
-                State b = (State) o2;
-                return Double.compare(a.dist, b.dist);
-            }
-        });
-
+        ArrayList<State> q = new ArrayList();
         q.add(new State(exp.getX(), exp.getY(), exp.getDirection().n, 0));
 
         while (!q.isEmpty()) {
-            State s = q.poll();
+            sort(q);
+            State s = q.get(q.size() - 1);
+            q.remove(q.size() - 1);
             //System.out.println(s.x + ", " + s.y + ", " + s.z);
             if (exp.shouldVisit(s.x, s.y)) continue;
             for (int dir = 0; dir < 4; dir++) {
@@ -140,6 +136,26 @@ public abstract class AI {
             }
         }
         return simpleMatrix;
+    }
+
+    private void sort(ArrayList<State> q) {
+        boolean changed = true;
+        while (changed) {
+            changed = false;
+            for (int i = 0; i < q.size() - 1; i++) {
+                if (q.get(i).dist < q.get(i + 1).dist) {
+                    State temp = q.get(i);
+                    q.set(i, q.get(i + 1));
+                    q.set(i + 1, temp);
+                    changed = true;
+                }
+            }
+        }
+        /*public int compare(Object o1, Object o2) {
+         State a = (State) o1;
+         State b = (State) o2;
+         return -Double.compare(a.dist, b.dist);
+         }*/
     }
 
     protected class State {

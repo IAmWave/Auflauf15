@@ -1,6 +1,6 @@
 
 import controller.Controller;
-import controller.EmulatedController;
+import controller.RobotController;
 import model.Exploration;
 import model.Move;
 
@@ -8,7 +8,7 @@ public class Main {
 
     public static void main(String[] args) {
         Exploration e = new Exploration();
-        Controller c = new EmulatedController(e);
+        Controller c = new RobotController(e);
         /*if (c.getClass() == RobotController.class) {
          new Thread() {
          public void run() {
@@ -28,6 +28,10 @@ public class Main {
         c.onStart();
         while (c.shouldContinue()) {
             Move next = e.decide();
+            if (next.tiles == 0) {
+                System.out.println("Invalid move!");
+                break;
+            }
             c.turn(e.getDirection().rotationTo(next.dir));
             e.setRotation(next.dir);
             //move bude zaroven prubezne hlasit Exploreru data ze skenu a pripadne kde narazil.
