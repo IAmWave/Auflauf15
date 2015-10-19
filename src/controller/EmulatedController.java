@@ -19,29 +19,35 @@ import static model.Map.WIDTH;
  * @author Václav
  */
 public class EmulatedController implements Controller {
-    
+
     long startTime = 0;
     Map map;
     Exploration exp;
-    double time = 90;
+    double time = 0;
+    int done = 0;
+    int doneAt90 = -1;
+    final static double TIME_LIMIT = 90;
 
     public EmulatedController(Exploration exp) {
-        map = new Map(new File("data/maps/03.map"), 0);
+        map = new Map(new File("data/maps/05.map"));
         this.exp = exp;
     }
 
     @Override
     public void turn(int times) {
-        time -= Math.abs(Exploration.TURN_COST * times);
+        time += Math.abs(Exploration.TURN_COST * times);
         exp.print();
         exp.setRotation(Direction.fromInt((exp.getDirection().n + times + 4) % 4));
     }
 
     @Override
     public void move(int tiles) {
+        if (time > 90 && doneAt90 == -1) doneAt90 = done;
+        scan();
+        if (map.tileAt(exp.getX(), exp.getY()) == Map.Tile.BAD) done++;
         map.setTileAt(exp.getX(), exp.getY(), Map.Tile.GOOD);
         if (tiles == 0) return;
-        time -= Exploration.MOVE_COST;
+        time += Exploration.MOVE_COST;
         int nx = exp.getX() + exp.getDirection().deltaX();
         int ny = exp.getY() + exp.getDirection().deltaY();
         if (map.walkable(nx, ny)) {
@@ -52,7 +58,18 @@ public class EmulatedController implements Controller {
         } else {
             exp.setTile(nx, ny, new ExplorationTile(true));
         }
+    }
 
+    private void scan() {
+        Direction dir = exp.getDirection().turnRight();
+        int cx = exp.getX(), cy = exp.getY();
+        int i = 0;
+        while (map.walkable(cx, cy)) {
+            cx += dir.deltaX();
+            cy += dir.deltaY();
+            i++;
+        }
+        exp.handleScan(exp.getX(), exp.getY(), dir, i - 1);
     }
 
     private void print() {
@@ -71,7 +88,8 @@ public class EmulatedController implements Controller {
 
     @Override
     public boolean shouldContinue() {
-        return time > 0;
+        return done < Map.OPEN;
+        //return time < TIME_LIMIT;
     }
 
     @Override
@@ -81,15 +99,12 @@ public class EmulatedController implements Controller {
 
     @Override
     public void onFinish() {
-        int count = 0;
-        for (int y = 0; y < HEIGHT; y++) {
-            for (int x = 0; x < WIDTH; x++) {
-                if (map.tileAt(x, y) == Tile.BAD) count++;
-            }
-        }
         exp.print();
         print();
-        System.out.println("Unfinished: " + count);
-        System.out.println("Elapsed time: " + (System.currentTimeMillis() - startTime) + " ms");
+        if (time > TIME_LIMIT)
+            System.out.println("Unfinished at 90: " + (Map.OPEN - doneAt90));
+        System.out.println("Unfinished: " + (Map.OPEN - done));
+        System.out.println("Robot time: " + time);
+        System.out.println("Computation time: " + (System.currentTimeMillis() - startTime) + " ms");
     }
 }

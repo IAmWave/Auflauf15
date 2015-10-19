@@ -28,7 +28,7 @@ public class Map {
     //<editor-fold desc="Tile" defaultstate="collapsed">
     public enum Tile {
 
-        WALL('#'), GOOD('\''), BAD('*');
+        WALL('#'), GOOD('.'), BAD('*');
 
         private final char type;
 
@@ -50,7 +50,7 @@ public class Map {
     //</editor-fold>
 
     private Tile[][] values = new Tile[WIDTH][HEIGHT];
-    
+
     public Map(Tile[][] values) {
         this.values = values;
     }
@@ -59,10 +59,10 @@ public class Map {
         return values[x][y];
     }
 
-    public void setTileAt(int x, int y, Tile to){
+    public void setTileAt(int x, int y, Tile to) {
         values[x][y] = to;
     }
-    
+
     public Tile[][] getTiles() {
         Tile[][] res = new Tile[WIDTH][HEIGHT];
         for (int x = 0; x < WIDTH; x++) for (int y = 0; y < HEIGHT; y++) {
@@ -71,43 +71,20 @@ public class Map {
         return res;
     }
 
-    public Map(File src, int seed) {
+    public Map(File src) {
+        int walls = 0;
         try {
             BufferedReader r = new BufferedReader(new InputStreamReader(new FileInputStream(src)));
-            String type = r.readLine();
-
+            r.readLine(); //prvni radek se uz nepouziva
             for (int y = 0; y < HEIGHT; y++) {
                 String line = r.readLine();
                 for (int x = 0; x < WIDTH; x++) {
                     values[x][y] = Tile.charToTile(line.charAt(x));
+                    if (values[x][y] == Tile.WALL) walls++;
                 }
             }
-            if (type.equals("r")) {
-                Random random = new Random(seed);
-                boolean[] good = new boolean[OPEN];
-                for (int i = 0; i < (OPEN - BAD_COUNT); i++) {
-                    int pos;
-                    do {
-                        pos = random.nextInt(OPEN);
-                    } while (good[pos]);
-                    good[pos] = true;
-                }
-                int i = 0;
-
-                for (int x = 0; x < WIDTH; x++) {
-                    for (int y = 0; y < HEIGHT; y++) {
-                        if (values[x][y] == Tile.BAD) {
-                            if (i == OPEN) {
-                                System.err.println("Not enough walls!");
-                                System.exit(1);
-                            }
-
-                            if (good[i]) values[x][y] = Tile.GOOD;
-                            i++;
-                        }
-                    }
-                }
-
+            if (walls != WIDTH * HEIGHT - OPEN) {
+                System.err.println("Warning: Invalid map!");
             }
         } catch (Exception e) {
             e.printStackTrace();

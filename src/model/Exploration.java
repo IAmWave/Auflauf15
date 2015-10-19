@@ -6,7 +6,7 @@
 package model;
 
 import model.ai.AI;
-import model.ai.DummyAI;
+import model.ai.GreedyAI;
 
 /**
  *
@@ -36,7 +36,7 @@ public class Exploration {
         map[Map.START_X][Map.START_Y + 1] = new ExplorationTile(true);
         map[Map.START_X + 1][Map.START_Y + 1] = new ExplorationTile(true);
         map[Map.START_X][Map.START_Y] = new ExplorationTile(false);
-        ai = new DummyAI(this);
+        ai = new GreedyAI(this);
     }
 
     public Move decide() {

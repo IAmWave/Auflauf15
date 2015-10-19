@@ -5,7 +5,6 @@
  */
 package model.ai;
 
-import model.Direction;
 import model.Exploration;
 import model.Map;
 import model.Move;

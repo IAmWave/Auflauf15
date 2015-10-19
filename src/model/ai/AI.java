@@ -72,13 +72,13 @@ public abstract class AI {
         for (int i = 0; i < path.size(); i++) {
             res[i] = path.get(path.size() - 1 - i);
         }
-        return path.toArray(res);
+        return res;
     }
 
     public void printMatrix() {
         for (int y = 0; y < Map.HEIGHT; y++) {
             for (int x = 0; x < Map.WIDTH; x++) {
-                //System.out.printf("%.1f\t", matrix[x][y]);
+                //System.out.printf("%.1f\t", simpleMatrix[x][y]);
             }
             System.out.println();
         }

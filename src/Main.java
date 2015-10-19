@@ -1,26 +1,17 @@
 
 import controller.Controller;
+import controller.EmulatedController;
 import controller.RobotController;
 import model.Exploration;
 import model.Move;
 
 public class Main {
 
+    static final boolean ROBOT = true;
+
     public static void main(String[] args) {
         Exploration e = new Exploration();
-        Controller c = new RobotController(e);
-        /*if (c.getClass() == RobotController.class) {
-         new Thread() {
-         public void run() {
-         while (true) {
-         if (Button.readButtons() != 0) {
-         System.exit(0);
-         }
-         Thread.yield();
-         }
-         }
-         }.start();
-         }*/
+        Controller c = ROBOT ? (new RobotController(e)) : (new EmulatedController(e));
         go(e, c);
     }
 
