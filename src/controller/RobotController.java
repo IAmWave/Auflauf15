@@ -5,6 +5,7 @@ import lejos.nxt.Button;
 import lejos.nxt.Motor;
 import lejos.nxt.NXTRegulatedMotor;
 import lejos.nxt.SensorPort;
+import lejos.nxt.Sound;
 import lejos.nxt.TouchSensor;
 import lejos.nxt.UltrasonicSensor;
 import lejos.nxt.comm.RConsole;
@@ -36,6 +37,7 @@ public class RobotController implements Controller {
     final int FROM_WALL = 70;
     final int FROM_WALL_SPEED = 100;
     final int SLOW_DOWN_AT = 200;
+    final int PANIC_TIME = 1000;
 
     Exploration exp;
 
@@ -60,6 +62,7 @@ public class RobotController implements Controller {
          left.rotate(-50);
          right.rotate(-50);
          }*/
+        //POST-SROVNAVANI
         left.rotate(-DEG_TILE * tiles, true);
         right.rotate(-DEG_TILE * tiles, true);
         int deg = left.getTachoCount();
@@ -68,8 +71,14 @@ public class RobotController implements Controller {
         right.setSpeed(1);
         boolean accelerate = true;
         boolean read = true;
-        while (left.isMoving() && !touchR.isPressed()) {
-            //ODKOMENTOVAT = NEZPOMALUJE PLYNULE! ČÍST MÉNĚ ČASTO?
+        long singlePress = -1;
+        while (left.isMoving() && !(touchL.isPressed() && touchR.isPressed())) {
+            if ((touchL.isPressed() || touchR.isPressed()) && singlePress == -1) {
+                singlePress = System.currentTimeMillis();
+            }
+            if (singlePress != -1 && System.currentTimeMillis() - singlePress > PANIC_TIME) {
+                panic();
+            }
             if (read) {
                 sonicData.add(new UltrasonicPair(Math.abs(targetDeg - left.getTachoCount()), sonic.getDistance()));
                 RConsole.println(sonicData.get(sonicData.size()- 1).getDeg() + " " + sonicData.get(sonicData.size()- 1).getValue());
@@ -111,7 +120,7 @@ public class RobotController implements Controller {
         }
         exp.setX(x);
         exp.setY(y);
-        if (touchR.isPressed()) {
+        if (touchL.isPressed() && touchR.isPressed()) { //konec dotykem
             x += exp.getDirection().deltaX();
             y += exp.getDirection().deltaY();
             exp.setTile(x, y, new ExplorationTile(true));
@@ -163,6 +172,12 @@ public class RobotController implements Controller {
         }
         left.flt(true);
         right.flt(true);
+    }
+
+    private void panic() {
+        Sound.beepSequenceUp();
+        Button.waitForAnyPress();
+        System.exit(0);
     }
 
     @Override
