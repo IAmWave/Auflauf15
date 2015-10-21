@@ -41,7 +41,7 @@ public class RobotController implements Controller {
     final int FROM_WALL_SPEED = 300;
     final int SLOW_DOWN_AT = 200;
     final int PANIC_TIME = 1000;
-    final int TO_WALL = 100;
+    final int TO_WALL = 150;
     final int ULTRA_OFFSET = 7;
     final int ULTRA_TILE = 27;
 
@@ -50,10 +50,10 @@ public class RobotController implements Controller {
 
     public RobotController(Exploration exp) {
         RConsole.openUSB(5000);
-        while (!touchL.isPressed()) {
-            RConsole.println(sonic.getDistance() + "");
-        }
-        System.exit(0);
+        /*while (!touchL.isPressed()) {
+         RConsole.println(sonic.getDistance() + "");
+         }
+         System.exit(0);*/
         this.exp = exp;
         exp.print();
         //KALIBROVACI CYKLUS
@@ -69,17 +69,22 @@ public class RobotController implements Controller {
         int x = exp.getX();
         int y = exp.getY();
         //COUVANI PRED JIZDOU
+        boolean fromWall = false;
         if (isBumpable(x, y, exp.getDirection().turnLeft().turnLeft())) {
             left.setSpeed(FROM_WALL_SPEED);
             right.setSpeed(FROM_WALL_SPEED);
             left.rotate(FROM_WALL, true);
             right.rotate(FROM_WALL);
+            fromWall = true;
         }
         //TODO + offset
-        left.rotate(-DEG_TILE * tiles, true);
-        right.rotate(-DEG_TILE * tiles, true);
+        left.rotate(-DEG_TILE * tiles + (fromWall ? TO_WALL : 0), true);
+        right.rotate(-DEG_TILE * tiles + (fromWall ? TO_WALL : 0), true);
         int deg = left.getTachoCount();
         int targetDeg = deg - DEG_TILE * tiles;
+        if (fromWall) {
+            targetDeg += FROM_WALL;
+        }
         left.setSpeed(1);
         right.setSpeed(1);
         boolean accelerate = true;
@@ -105,13 +110,18 @@ public class RobotController implements Controller {
                 if (left.getSpeed() >= MAX_SPEED) {
                     accelerate = false;
                 }
-            } else if (Math.abs(left.getTachoCount() - targetDeg) < SLOW_DOWN_AT && left.getSpeed() > MIN_SPEED) {
+            } else if (Math.abs(left.getTachoCount() - targetDeg) < SLOW_DOWN_AT && left.getSpeed() > MIN_SPEED /*&& !isBumpable(x + tiles * exp.getDirection().deltaX(), y + tiles * exp.getDirection().deltaY(), exp.getDirection())*/) {
                 right.setSpeed(left.getSpeed() - ACCELERATION);
                 left.setSpeed(left.getSpeed() - ACCELERATION);
-
             }
             Delay.msDelay(20);
         }
+        /*
+        // TADY TO PADA PLS SPRAVIT if (isBumpable(x + tiles * exp.getDirection().deltaX(), y + tiles * exp.getDirection().deltaY(), exp.getDirection())) {
+            System.out.println("WALL");
+            left.rotate(-TO_WALL, true);
+            right.rotate(-TO_WALL, false);
+        }*/
         left.flt(true);
         right.flt(true);
 
@@ -132,6 +142,7 @@ public class RobotController implements Controller {
             }
 
             if (tileData.size() > 0) {
+
                 Integer[] ints = tileData.toArray(new Integer[tileData.size()]);
                 int[] ar = new int[ints.length];
                 for (int j = 0; j < ar.length; j++) {
@@ -142,7 +153,9 @@ public class RobotController implements Controller {
                 //RConsole.println("ARRAY: " + ar.length);
                 int medianTiles = (ar[ar.length / 2] - ULTRA_OFFSET) / ULTRA_TILE;
                 exp.handleScan(x, y, exp.getDirection(), medianTiles);
-                RConsole.println("MEDIAN " + ar[ar.length / 2]);
+                RConsole.println("MEDIAN " + " " + x + " " + y + " " + ar[ar.length / 2]);
+            } else {
+                RConsole.println("NO DATA MEASURED");
             }
         }
         exp.setX(x);
@@ -204,9 +217,12 @@ public class RobotController implements Controller {
     private boolean isBumpable(int x, int y, Direction dir) {
         int nx = x + dir.deltaX();
         int ny = y + dir.deltaY();
-        if (exp.possiblyFree(nx, ny)) return false;
-        if (dir == Direction.DOWN && x == Map.START_X && y == Map.START_Y)
+        if (exp.possiblyFree(nx, ny)) {
+            return false;
+        }
+        if (dir == Direction.DOWN && x == Map.START_X && y == Map.START_Y) {
             return false; //jel by na start
+        }
         return true;
     }
 
@@ -224,7 +240,7 @@ public class RobotController implements Controller {
     @Override
     public void onStart() { //vyjede ze startu
         exp.setY(exp.getY() + 1); //jinak si mysli, ze je vys
-        move(1);
+        move(5);
     }
 
     @Override
