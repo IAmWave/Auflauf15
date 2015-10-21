@@ -10,8 +10,10 @@ import lejos.nxt.TouchSensor;
 import lejos.nxt.UltrasonicSensor;
 import lejos.nxt.comm.RConsole;
 import lejos.util.Delay;
+import model.Direction;
 import model.Exploration;
 import model.ExplorationTile;
+import model.Map;
 import util.GoogleSorter;
 import util.UltrasonicPair;
 
@@ -36,7 +38,7 @@ public class RobotController implements Controller {
     final int ACCELERATION = 25;
     final int DECCELERATION_TIME = 70;
     final int FROM_WALL = 70;
-    final int FROM_WALL_SPEED = 100;
+    final int FROM_WALL_SPEED = 300;
     final int SLOW_DOWN_AT = 200;
     final int PANIC_TIME = 1000;
     final int TO_WALL = 100;
@@ -67,10 +69,9 @@ public class RobotController implements Controller {
         int x = exp.getX();
         int y = exp.getY();
         //COUVANI PRED JIZDOU
-        if (!exp.possiblyFree(x - exp.getDirection().deltaX(), y - exp.getDirection().deltaY())
-                && !(x - exp.getDirection().deltaX() == 4 && y - exp.getDirection().deltaY() == 3)) {
-            left.setSpeed(this.MAX_SPEED / 2);
-            right.setSpeed(this.MAX_SPEED / 2);
+        if (isBumpable(x, y, exp.getDirection().turnLeft().turnLeft())) {
+            left.setSpeed(FROM_WALL_SPEED);
+            right.setSpeed(FROM_WALL_SPEED);
             left.rotate(FROM_WALL, true);
             right.rotate(FROM_WALL);
         }
@@ -142,9 +143,9 @@ public class RobotController implements Controller {
                 int ulX = x;
                 int ulY = y;
                 /*
-                for (int j = 1; j <= median; j++) {
-                    exp.setTile(exp.getDirection().turnRight().deltaX(), y, null);
-                }*/
+                 for (int j = 1; j <= median; j++) {
+                 exp.setTile(exp.getDirection().turnRight().deltaX(), y, null);
+                 }*/
                 RConsole.println("MEDIAN " + ar[ar.length / 2]);
             }
         }
@@ -202,6 +203,15 @@ public class RobotController implements Controller {
         }
         left.flt(true);
         right.flt(true);
+    }
+
+    private boolean isBumpable(int x, int y, Direction dir) {
+        int nx = x + dir.deltaX();
+        int ny = y + dir.deltaY();
+        if (exp.possiblyFree(nx, ny)) return false;
+        if (dir == Direction.DOWN && x == Map.START_X && y == Map.START_Y)
+            return false; //jel by na start
+        return true;
     }
 
     private void panic() {
