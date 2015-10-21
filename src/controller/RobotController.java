@@ -75,6 +75,7 @@ public class RobotController implements Controller {
             left.rotate(FROM_WALL, true);
             right.rotate(FROM_WALL);
         }
+        //TODO + offset
         left.rotate(-DEG_TILE * tiles, true);
         right.rotate(-DEG_TILE * tiles, true);
         int deg = left.getTachoCount();
@@ -139,13 +140,8 @@ public class RobotController implements Controller {
                 //System.out.println(ar.length);
                 sorter.sort(ar);
                 //RConsole.println("ARRAY: " + ar.length);
-                int median = (ar[ar.length / 2] - ULTRA_OFFSET) / ULTRA_TILE;
-                int ulX = x;
-                int ulY = y;
-                /*
-                 for (int j = 1; j <= median; j++) {
-                 exp.setTile(exp.getDirection().turnRight().deltaX(), y, null);
-                 }*/
+                int medianTiles = (ar[ar.length / 2] - ULTRA_OFFSET) / ULTRA_TILE;
+                exp.handleScan(x, y, exp.getDirection(), medianTiles);
                 RConsole.println("MEDIAN " + ar[ar.length / 2]);
             }
         }
