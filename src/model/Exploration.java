@@ -16,7 +16,7 @@ public class Exploration {
 
     public static final double MOVE_COST = 1.5;
     public static final double TURN_COST = 1;
-    
+
     public static final double SCAN_FREE_COEF = 0.3;
     public static final double SCAN_WALL_COEF = 0.3;
     ExplorationTile[][] map = new ExplorationTile[Map.WIDTH][Map.HEIGHT];
@@ -79,7 +79,9 @@ public class Exploration {
     }
 
     public void setTile(int x, int y, ExplorationTile tile) {
-        if (!inBounds(x, y)) return;
+        if (!inBounds(x, y)) {
+            return;
+        }
         map[x][y] = tile;
     }
 
@@ -88,9 +90,15 @@ public class Exploration {
     }
 
     public boolean shouldVisit(int x, int y) {
-        if (!possiblyFree(x, y)) return false;
-        if (map[x][y].visited) return false;
-        if (map[x][y].wall <= 0.5) return true;
+        if (!possiblyFree(x, y)) {
+            return false;
+        }
+        if (map[x][y].visited) {
+            return false;
+        }
+        if (map[x][y].wall <= 0.5) {
+            return true;
+        }
         return false;
     }
 
@@ -131,7 +139,7 @@ public class Exploration {
                     System.out.print(map[x][y].toChar());
                 }
             }
-            System.out.println("|");
+            System.out.println("|" + (y == 0 ? " " + getX() + " " + getY() : ""));
         }
         System.out.println(" ---------");
     }

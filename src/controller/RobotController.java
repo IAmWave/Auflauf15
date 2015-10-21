@@ -12,6 +12,7 @@ import lejos.nxt.comm.RConsole;
 import lejos.util.Delay;
 import model.Exploration;
 import model.ExplorationTile;
+import util.GoogleSorter;
 import util.UltrasonicPair;
 
 /**
@@ -38,11 +39,19 @@ public class RobotController implements Controller {
     final int FROM_WALL_SPEED = 100;
     final int SLOW_DOWN_AT = 200;
     final int PANIC_TIME = 1000;
+    final int TO_WALL = 100;
+    final int ULTRA_OFFSET = 7;
+    final int ULTRA_TILE = 27;
 
     Exploration exp;
+    GoogleSorter sorter = new GoogleSorter();
 
     public RobotController(Exploration exp) {
         RConsole.openUSB(5000);
+        while (!touchL.isPressed()) {
+            RConsole.println(sonic.getDistance() + "");
+        }
+        System.exit(0);
         this.exp = exp;
         exp.print();
         //KALIBROVACI CYKLUS
@@ -58,11 +67,13 @@ public class RobotController implements Controller {
         int x = exp.getX();
         int y = exp.getY();
         //COUVANI PRED JIZDOU
-        /*if(exp.tileAt(x-exp.getDirection().deltaX(), y-exp.getDirection().deltaY()).wall==1){
-         left.rotate(-50);
-         right.rotate(-50);
-         }*/
-        //POST-SROVNAVANI
+        if (!exp.possiblyFree(x - exp.getDirection().deltaX(), y - exp.getDirection().deltaY())
+                && !(x - exp.getDirection().deltaX() == 4 && y - exp.getDirection().deltaY() == 3)) {
+            left.setSpeed(this.MAX_SPEED / 2);
+            right.setSpeed(this.MAX_SPEED / 2);
+            left.rotate(FROM_WALL, true);
+            right.rotate(FROM_WALL);
+        }
         left.rotate(-DEG_TILE * tiles, true);
         right.rotate(-DEG_TILE * tiles, true);
         int deg = left.getTachoCount();
@@ -81,7 +92,7 @@ public class RobotController implements Controller {
             }
             if (read) {
                 sonicData.add(new UltrasonicPair(Math.abs(targetDeg - left.getTachoCount()), sonic.getDistance()));
-                RConsole.println(sonicData.get(sonicData.size()- 1).getDeg() + " " + sonicData.get(sonicData.size()- 1).getValue());
+                //RConsole.println(sonicData.get(sonicData.size() - 1).getDeg() + " " + sonicData.get(sonicData.size() - 1).getValue());
                 read = false;
             } else {
                 read = true;
@@ -108,15 +119,34 @@ public class RobotController implements Controller {
             y += exp.getDirection().deltaY();
             exp.setTile(x, y, new ExplorationTile(false));
             //POCITANI ULTRASONIC DAT
-            /*int centerDeg = i * DEG_TILE - DEG_TILE / 2;
-             ArrayList<UltrasonicPair> tileData = new ArrayList<>();
-             for (int j = 0; j < sonicData.size(); j++) {
-             if (sonicData.get(j).getDeg() >= centerDeg - (DEG_TILE * 2) / 3 && sonicData.get(j).getDeg() <= centerDeg + DEG_TILE / 3) {
-             tileData.add(sonicData.get(j));
-             }
-             }*/
-            //TODO:
-            //NAJIT MEDIAN V TILEDATA A ZAPSAT JAKO SPRAVNOU VZDALENOST DO MAPY
+            int centerDeg = i * DEG_TILE - DEG_TILE / 2;
+            ArrayList<Integer> tileData = new ArrayList<>();
+            for (int j = 0; j < sonicData.size(); j++) {
+                if (sonicData.get(j).getDeg() >= centerDeg - (DEG_TILE * 2) / 3 && sonicData.get(j).getDeg() <= centerDeg - DEG_TILE / 4) {
+                    if (sonicData.get(j).getValue() != 255) {
+                        tileData.add(sonicData.get(j).getValue());
+                    }
+                }
+            }
+
+            if (tileData.size() > 0) {
+                Integer[] ints = tileData.toArray(new Integer[tileData.size()]);
+                int[] ar = new int[ints.length];
+                for (int j = 0; j < ar.length; j++) {
+                    ar[j] = ints[j];
+                }
+                //System.out.println(ar.length);
+                sorter.sort(ar);
+                //RConsole.println("ARRAY: " + ar.length);
+                int median = (ar[ar.length / 2] - ULTRA_OFFSET) / ULTRA_TILE;
+                int ulX = x;
+                int ulY = y;
+                /*
+                for (int j = 1; j <= median; j++) {
+                    exp.setTile(exp.getDirection().turnRight().deltaX(), y, null);
+                }*/
+                RConsole.println("MEDIAN " + ar[ar.length / 2]);
+            }
         }
         exp.setX(x);
         exp.setY(y);
