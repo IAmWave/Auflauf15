@@ -49,7 +49,7 @@ public class RobotController implements Controller {
     GoogleSorter sorter = new GoogleSorter();
 
     public RobotController(Exploration exp) {
-        RConsole.openUSB(5000);
+        RConsole.openUSB(500);
         /*while (!touchL.isPressed()) {
          RConsole.println(sonic.getDistance() + "");
          }
@@ -160,6 +160,9 @@ public class RobotController implements Controller {
         }
         exp.setX(x);
         exp.setY(y);
+        if(!Exploration.inBounds(x, y)){
+            panic(); //Something, somewhere has gone horribly wrong.
+        }
         if (touchL.isPressed() && touchR.isPressed()) { //konec dotykem
             x += exp.getDirection().deltaX();
             y += exp.getDirection().deltaY();
@@ -240,7 +243,7 @@ public class RobotController implements Controller {
     @Override
     public void onStart() { //vyjede ze startu
         exp.setY(exp.getY() + 1); //jinak si mysli, ze je vys
-        move(5);
+        move(3);
     }
 
     @Override
