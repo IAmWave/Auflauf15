@@ -38,10 +38,11 @@ public class RobotController implements Controller {
     final int ACCELERATION = 25;
     final int DECCELERATION_TIME = 70;
     final int FROM_WALL = 70;
-    final int FROM_WALL_SPEED = 300;
+    final int FROM_WALL_SPEED = 100;
     final int SLOW_DOWN_AT = 200;
-    final int PANIC_TIME = 1000;
+    final int PANIC_TIME = 500;
     final int TO_WALL = 150;
+    final int TO_WALL_SPEED = 300;
     final int ULTRA_OFFSET = 7;
     final int ULTRA_TILE = 27;
 
@@ -68,22 +69,31 @@ public class RobotController implements Controller {
         ArrayList<UltrasonicPair> sonicData = new ArrayList<>();
         int x = exp.getX();
         int y = exp.getY();
-        //COUVANI PRED JIZDOU
+
         boolean fromWall = false;
         if (isBumpable(x, y, exp.getDirection().turnLeft().turnLeft())) {
-            left.setSpeed(FROM_WALL_SPEED);
-            right.setSpeed(FROM_WALL_SPEED);
-            left.rotate(FROM_WALL, true);
-            right.rotate(FROM_WALL);
+            //COUVANI PRED JIZDOU
+            left.setSpeed(TO_WALL_SPEED);
+            right.setSpeed(TO_WALL_SPEED);
+            left.rotate(TO_WALL, true);
+            right.rotate(TO_WALL);
+            //Button.waitForAnyPress();
             fromWall = true;
         }
-        //TODO + offset
-        left.rotate(-DEG_TILE * tiles + (fromWall ? TO_WALL : 0), true);
-        right.rotate(-DEG_TILE * tiles + (fromWall ? TO_WALL : 0), true);
+        boolean bump = false;
+        int SLOW_DOWN = SLOW_DOWN_AT;
+        if (isBumpable(x + tiles * exp.getDirection().deltaX(), y + tiles * exp.getDirection().deltaY(), exp.getDirection())) {
+            bump = true;
+            SLOW_DOWN -= TO_WALL;
+        }
+        //PRICTENI DEG POKUD JE U ZDI
+        left.rotate(-DEG_TILE * tiles - (fromWall ? FROM_WALL : 0) - (bump ? TO_WALL : 0), true);
+        right.rotate(-DEG_TILE * tiles - (fromWall ? FROM_WALL : 0) - (bump ? TO_WALL : 0), true);
         int deg = left.getTachoCount();
         int targetDeg = deg - DEG_TILE * tiles;
+        deg -= (fromWall ? FROM_WALL : 0);
         if (fromWall) {
-            targetDeg += FROM_WALL;
+            targetDeg -= FROM_WALL;
         }
         left.setSpeed(1);
         right.setSpeed(1);
@@ -91,6 +101,9 @@ public class RobotController implements Controller {
         boolean read = true;
         long singlePress = -1;
         while (left.isMoving() && !(touchL.isPressed() && touchR.isPressed())) {
+            if (Button.readButtons() == Button.ESCAPE.getId()) {
+                System.exit(0);
+            }
             if ((touchL.isPressed() || touchR.isPressed()) && singlePress == -1) {
                 singlePress = System.currentTimeMillis();
             }
@@ -110,18 +123,19 @@ public class RobotController implements Controller {
                 if (left.getSpeed() >= MAX_SPEED) {
                     accelerate = false;
                 }
-            } else if (Math.abs(left.getTachoCount() - targetDeg) < SLOW_DOWN_AT && left.getSpeed() > MIN_SPEED /*&& !isBumpable(x + tiles * exp.getDirection().deltaX(), y + tiles * exp.getDirection().deltaY(), exp.getDirection())*/) {
+            } else if (Math.abs(left.getTachoCount() - targetDeg) < SLOW_DOWN && left.getSpeed() > MIN_SPEED /*&& !isBumpable(x + tiles * exp.getDirection().deltaX(), y + tiles * exp.getDirection().deltaY(), exp.getDirection())*/) {
                 right.setSpeed(left.getSpeed() - ACCELERATION);
                 left.setSpeed(left.getSpeed() - ACCELERATION);
             }
             Delay.msDelay(20);
         }
-        /*
-        // TADY TO PADA PLS SPRAVIT if (isBumpable(x + tiles * exp.getDirection().deltaX(), y + tiles * exp.getDirection().deltaY(), exp.getDirection())) {
-            System.out.println("WALL");
-            left.rotate(-TO_WALL, true);
-            right.rotate(-TO_WALL, false);
-        }*/
+        /*if (isBumpable(x + tiles * exp.getDirection().deltaX(), y + tiles * exp.getDirection().deltaY(), exp.getDirection())) {
+         System.out.println("WALL");
+         left.setSpeed(MAX_SPEED);
+         right.setSpeed(MAX_SPEED);
+         left.rotate(-TO_WALL, true);
+         right.rotate(-TO_WALL, false);
+         }*/
         left.flt(true);
         right.flt(true);
 
@@ -160,7 +174,7 @@ public class RobotController implements Controller {
         }
         exp.setX(x);
         exp.setY(y);
-        if(!Exploration.inBounds(x, y)){
+        if (!Exploration.inBounds(x, y)) {
             panic(); //Something, somewhere has gone horribly wrong.
         }
         if (touchL.isPressed() && touchR.isPressed()) { //konec dotykem
