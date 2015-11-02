@@ -45,6 +45,10 @@ public class RobotController implements Controller {
     final int TO_WALL_SPEED = 300;
     final int ULTRA_OFFSET = 7;
     final int ULTRA_TILE = 27;
+    //PANIC MODE
+    final int PANIC_SPEED = 300;
+    final int PANIC_ROTATION = 90;
+    final int PANIC_TIME_DELTA = 200;
 
     Exploration exp;
     GoogleSorter sorter = new GoogleSorter();
@@ -102,6 +106,9 @@ public class RobotController implements Controller {
         long singlePress = -1;
         while (left.isMoving() && !(touchL.isPressed() && touchR.isPressed())) {
             if (Button.readButtons() == Button.ESCAPE.getId()) {
+                exp.print();
+                Delay.msDelay(1000);
+                Button.waitForAnyPress();
                 System.exit(0);
             }
             if ((touchL.isPressed() || touchR.isPressed()) && singlePress == -1) {
@@ -246,7 +253,43 @@ public class RobotController implements Controller {
     private void panic() {
         Sound.beepSequenceUp();
         Button.waitForAnyPress();
+        Delay.msDelay(500);
+        left.setSpeed(PANIC_SPEED);
+        right.setSpeed(PANIC_SPEED);
+        long singlePress = -1;
+        left.backward();
+        right.backward();
+        while (Button.readButtons() == 0) {
+            if (touchL.isPressed() && touchR.isPressed()) {
+                //otocit o 90
+                pullBack();
+                left.rotate(DEG_TURN_90, true);
+                right.rotate(-DEG_TURN_90, true);
+            }
+            if (touchL.isPressed() || touchR.isPressed()) {
+                if (singlePress == -1) singlePress = System.currentTimeMillis();
+            } else singlePress = -1;
+            if (singlePress != -1 && System.currentTimeMillis() - singlePress > PANIC_TIME_DELTA) {
+                pullBack();
+                int coef = touchL.isPressed() ? 1 : (-1);
+                left.rotate(PANIC_ROTATION * coef, true);
+                right.rotate(-PANIC_ROTATION * coef, false);
+            }
+            Delay.msDelay(25);
+        }
         System.exit(0);
+    }
+
+    private void pullBack() {
+        left.flt(true);
+        right.flt(true);
+        Delay.msDelay(100);
+        left.setSpeed(FROM_WALL_SPEED);
+        right.setSpeed(FROM_WALL_SPEED);
+        left.rotate(FROM_WALL, true);
+        right.rotate(FROM_WALL, false);
+        left.setSpeed(PANIC_SPEED);
+        right.setSpeed(PANIC_SPEED);
     }
 
     @Override
