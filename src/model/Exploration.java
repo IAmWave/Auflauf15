@@ -16,9 +16,9 @@ public class Exploration {
 
     public static final double MOVE_COST = 1.5;
     public static final double TURN_COST = 1;
-
-    public static final double SCAN_FREE_COEF = 0.3;
-    public static final double SCAN_WALL_COEF = 0.3;
+    //vyssi = duveryhodnejsi
+    public static final double[] SCAN_FREE_COEF = {1, 0.5, 0.3};
+    public static final double[] SCAN_WALL_COEF = {1, 0.5, 0};
     ExplorationTile[][] map = new ExplorationTile[Map.WIDTH][Map.HEIGHT];
     int x = Map.START_X;
     int y = Map.START_Y;
@@ -52,6 +52,7 @@ public class Exploration {
     }
 
     public void handleScan(int sx, int sy, Direction dir, int value) { //value = počet políček před zdí
+        if(value>2) value = 2;
         int cx = sx, cy = sy;
         for (int i = 0; i < value; i++) {
             cx += dir.deltaX();
@@ -60,20 +61,24 @@ public class Exploration {
                 return;
             }
         }
+        double freeCoef = value < SCAN_FREE_COEF.length ? SCAN_FREE_COEF[value] 
+                : SCAN_FREE_COEF[SCAN_FREE_COEF.length - 1];
+        double wallCoef = value < SCAN_WALL_COEF.length ? SCAN_WALL_COEF[value] 
+                : SCAN_WALL_COEF[SCAN_WALL_COEF.length - 1];
         cx = sx;
         cy = sy;
         for (int i = 0; i < value; i++) {
             cx += dir.deltaX();
             cy += dir.deltaY();
-            map[cx][cy].wall = SCAN_FREE_COEF * map[cx][cy].wall;
+            map[cx][cy].wall = (1-freeCoef) * map[cx][cy].wall;
         }
         cx += dir.deltaX();
         cy += dir.deltaY();
         if (inBounds(cx, cy)) {
-            map[cx][cy].wall = 1 - (1 - map[cx][cy].wall) * SCAN_WALL_COEF;
+            map[cx][cy].wall = 1 - (1 - map[cx][cy].wall) * (1-wallCoef);
         }
     }
-
+    
     public ExplorationTile tileAt(int x, int y) {
         return map[x][y];
     }

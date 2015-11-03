@@ -40,21 +40,24 @@ public class RobotController implements Controller {
     final int FROM_WALL = 70;
     final int FROM_WALL_SPEED = 100;
     final int SLOW_DOWN_AT = 200;
-    final int PANIC_TIME = 500;
     final int TO_WALL = 150;
     final int TO_WALL_SPEED = 300;
-    final int ULTRA_OFFSET = 7;
-    final int ULTRA_TILE = 27;
+    //SCAN
+    final double SCAN_DISTANCE_FROM = -0.8; //v jakych uhlech je scan v jakych policcich
+    final double SCAN_DISTANCE_TO = -0.2;
+    final int SCAN_VALUE_OFFSET = -7; //-7
+    final int SCAN_VALUE_TILE = 17;
     //PANIC MODE
+    final int PANIC_TIME = 500;
     final int PANIC_SPEED = 300;
     final int PANIC_ROTATION = 90;
-    final int PANIC_TIME_DELTA = 200;
+    final int PANIC_TIME_DELTA = 150;
 
     Exploration exp;
     GoogleSorter sorter = new GoogleSorter();
 
     public RobotController(Exploration exp) {
-        RConsole.openUSB(500);
+        RConsole.openUSB(3000);
         /*while (!touchL.isPressed()) {
          RConsole.println(sonic.getDistance() + "");
          }
@@ -70,7 +73,9 @@ public class RobotController implements Controller {
 
     @Override
     public void move(int tiles) {
-        ArrayList<UltrasonicPair> sonicData = new ArrayList<>();
+        ArrayList<Integer> tileData[] = new ArrayList[10];
+        for (int i = 0; i < tileData.length; i++) tileData[i] = new ArrayList<>();
+
         int x = exp.getX();
         int y = exp.getY();
 
@@ -118,8 +123,21 @@ public class RobotController implements Controller {
                 panic();
             }
             if (read) {
-                sonicData.add(new UltrasonicPair(Math.abs(targetDeg - left.getTachoCount()), sonic.getDistance()));
-                //RConsole.println(sonicData.get(sonicData.size() - 1).getDeg() + " " + sonicData.get(sonicData.size() - 1).getValue());
+                int dist = sonic.getDistance();
+                if (dist == 255) continue;
+                int sDeg = Math.abs(deg - left.getTachoCount());
+                int tile = -1;
+                for (int i = 0; i < 11; i++) { //docasne
+                    int centerDeg = i * DEG_TILE + DEG_TILE / 2;
+                    if (sDeg >= centerDeg + (DEG_TILE * SCAN_DISTANCE_FROM)
+                            && sDeg <= centerDeg + DEG_TILE * SCAN_DISTANCE_TO) {
+                        if (tile != -1) RConsole.println("duplicate: " + sDeg);
+                        tile = i;
+                    }
+                }
+                //debugovaci vypis
+                RConsole.println((tile == -1 ? "NONE" : ("" + tile)) + "\t" + sDeg + "\t" + dist);
+                if (tile != -1) tileData[tile].add(dist);
                 read = false;
             } else {
                 read = true;
@@ -136,48 +154,32 @@ public class RobotController implements Controller {
             }
             Delay.msDelay(20);
         }
-        /*if (isBumpable(x + tiles * exp.getDirection().deltaX(), y + tiles * exp.getDirection().deltaY(), exp.getDirection())) {
-         System.out.println("WALL");
-         left.setSpeed(MAX_SPEED);
-         right.setSpeed(MAX_SPEED);
-         left.rotate(-TO_WALL, true);
-         right.rotate(-TO_WALL, false);
-         }*/
+        
         left.flt(true);
         right.flt(true);
 
         int tilesFinished = Math.abs((int) Math.round((left.getTachoCount() - deg + 0.0) / DEG_TILE));
-        for (int i = 0; i < tilesFinished; i++) {
-            x += exp.getDirection().deltaX();
-            y += exp.getDirection().deltaY();
-            exp.setTile(x, y, new ExplorationTile(false));
-            //POCITANI ULTRASONIC DAT
-            int centerDeg = i * DEG_TILE - DEG_TILE / 2;
-            ArrayList<Integer> tileData = new ArrayList<>();
-            for (int j = 0; j < sonicData.size(); j++) {
-                if (sonicData.get(j).getDeg() >= centerDeg - (DEG_TILE * 2) / 3 && sonicData.get(j).getDeg() <= centerDeg - DEG_TILE / 4) {
-                    if (sonicData.get(j).getValue() != 255) {
-                        tileData.add(sonicData.get(j).getValue());
-                    }
-                }
-            }
-
-            if (tileData.size() > 0) {
-
-                Integer[] ints = tileData.toArray(new Integer[tileData.size()]);
+        for (int i = 0; i <= tilesFinished; i++) {
+            //RConsole.println(x + " " + y + ": ");
+            if (tileData[i].size() > 0) {
+                Integer[] ints = tileData[i].toArray(new Integer[tileData[i].size()]);
                 int[] ar = new int[ints.length];
                 for (int j = 0; j < ar.length; j++) {
                     ar[j] = ints[j];
                 }
-                //System.out.println(ar.length);
                 sorter.sort(ar);
-                //RConsole.println("ARRAY: " + ar.length);
-                int medianTiles = (ar[ar.length / 2] - ULTRA_OFFSET) / ULTRA_TILE;
-                exp.handleScan(x, y, exp.getDirection(), medianTiles);
-                RConsole.println("MEDIAN " + " " + x + " " + y + " " + ar[ar.length / 2]);
+                int medianTiles = (ar[ar.length / 2] + SCAN_VALUE_OFFSET) / SCAN_VALUE_TILE;
+                RConsole.println("MEDIAN " + ar[ar.length/2]);
+                RConsole.println("Handling: " + x + ", " + y +
+                        " " + exp.getDirection().turnRight() + " " + medianTiles);
+                exp.handleScan(x, y, exp.getDirection().turnRight(), medianTiles);
+                //RConsole.println("" + ar[ar.length / 2]);
             } else {
-                RConsole.println("NO DATA MEASURED");
+                //RConsole.println("NO DATA MEASURED");
             }
+            x += exp.getDirection().deltaX();
+            y += exp.getDirection().deltaY();
+            exp.setTile(x, y, new ExplorationTile(false));
         }
         exp.setX(x);
         exp.setY(y);
@@ -194,12 +196,6 @@ public class RobotController implements Controller {
             left.rotate(FROM_WALL, true);
             right.rotate(FROM_WALL, false);
         }
-        System.out.println(sonicData.size());
-        //VÝPIS EXTRÉMNĚ ZPOMALUJE
-        /*for (int i = 0; i < sonicData.size(); i++) {
-         System.out.println("DEG: " + sonicData.get(i).getDeg() + " DIST: " + sonicData.get(i).getValue());
-         }*/
-        //System.out.println("TILES FINISHED: " + tilesFinished);
     }
 
     @Override
@@ -254,17 +250,23 @@ public class RobotController implements Controller {
         Sound.beepSequenceUp();
         Button.waitForAnyPress();
         Delay.msDelay(500);
-        left.setSpeed(PANIC_SPEED);
-        right.setSpeed(PANIC_SPEED);
         long singlePress = -1;
-        left.backward();
-        right.backward();
+        boolean startAgain = true;
         while (Button.readButtons() == 0) {
+            if (startAgain) {
+                left.setSpeed(PANIC_SPEED);
+                right.setSpeed(PANIC_SPEED);
+                singlePress = -1;
+                left.backward();
+                right.backward();
+                startAgain = false;
+            }
             if (touchL.isPressed() && touchR.isPressed()) {
                 //otocit o 90
                 pullBack();
                 left.rotate(DEG_TURN_90, true);
-                right.rotate(-DEG_TURN_90, true);
+                right.rotate(-DEG_TURN_90, false);
+                startAgain = true;
             }
             if (touchL.isPressed() || touchR.isPressed()) {
                 if (singlePress == -1) singlePress = System.currentTimeMillis();
@@ -274,6 +276,7 @@ public class RobotController implements Controller {
                 int coef = touchL.isPressed() ? 1 : (-1);
                 left.rotate(PANIC_ROTATION * coef, true);
                 right.rotate(-PANIC_ROTATION * coef, false);
+                startAgain = true;
             }
             Delay.msDelay(25);
         }
