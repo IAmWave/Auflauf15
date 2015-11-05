@@ -57,7 +57,7 @@ public class RobotController implements Controller {
     GoogleSorter sorter = new GoogleSorter();
 
     public RobotController(Exploration exp) {
-        RConsole.openUSB(3000);
+        RConsole.openUSB(1500);
         /*while (!touchL.isPressed()) {
          RConsole.println(sonic.getDistance() + "");
          }
@@ -154,7 +154,7 @@ public class RobotController implements Controller {
             }
             Delay.msDelay(20);
         }
-        
+
         left.flt(true);
         right.flt(true);
 
@@ -169,17 +169,19 @@ public class RobotController implements Controller {
                 }
                 sorter.sort(ar);
                 int medianTiles = (ar[ar.length / 2] + SCAN_VALUE_OFFSET) / SCAN_VALUE_TILE;
-                RConsole.println("MEDIAN " + ar[ar.length/2]);
-                RConsole.println("Handling: " + x + ", " + y +
-                        " " + exp.getDirection().turnRight() + " " + medianTiles);
+                RConsole.println("MEDIAN " + ar[ar.length / 2]);
+                RConsole.println("Handling: " + x + ", " + y
+                        + " " + exp.getDirection().turnRight() + " " + medianTiles);
                 exp.handleScan(x, y, exp.getDirection().turnRight(), medianTiles);
                 //RConsole.println("" + ar[ar.length / 2]);
             } else {
                 //RConsole.println("NO DATA MEASURED");
             }
-            x += exp.getDirection().deltaX();
-            y += exp.getDirection().deltaY();
-            exp.setTile(x, y, new ExplorationTile(false));
+            if (i < tilesFinished) {
+                x += exp.getDirection().deltaX();
+                y += exp.getDirection().deltaY();
+                exp.setTile(x, y, new ExplorationTile(false));
+            }
         }
         exp.setX(x);
         exp.setY(y);
