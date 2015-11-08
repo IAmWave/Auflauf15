@@ -2,6 +2,7 @@ package controller;
 
 import java.util.ArrayList;
 import lejos.nxt.Button;
+import lejos.nxt.LightSensor;
 import lejos.nxt.Motor;
 import lejos.nxt.NXTRegulatedMotor;
 import lejos.nxt.SensorPort;
@@ -15,7 +16,6 @@ import model.Exploration;
 import model.ExplorationTile;
 import model.Map;
 import util.GoogleSorter;
-import util.UltrasonicPair;
 
 /**
  *
@@ -26,6 +26,7 @@ public class RobotController implements Controller {
     TouchSensor touchL = new TouchSensor(SensorPort.S1);
     TouchSensor touchR = new TouchSensor(SensorPort.S2);
     UltrasonicSensor sonic = new UltrasonicSensor(SensorPort.S4);
+    LightSensor light = new LightSensor(SensorPort.S3);
     NXTRegulatedMotor magnet = Motor.A;
     NXTRegulatedMotor left = Motor.B;
     NXTRegulatedMotor right = Motor.C;
@@ -47,6 +48,9 @@ public class RobotController implements Controller {
     final double SCAN_DISTANCE_TO = -0.2;
     final int SCAN_VALUE_OFFSET = -7; //-7
     final int SCAN_VALUE_TILE = 17;
+    //LIGHT
+    final int LIGHT_RED = 47;
+    final int MAGNET_ANGLE = 90;
     //PANIC MODE
     final int PANIC_TIME = 500;
     final int PANIC_SPEED = 300;
@@ -54,9 +58,15 @@ public class RobotController implements Controller {
     final int PANIC_TIME_DELTA = 150;
 
     Exploration exp;
+    boolean magnetUp = false;
     GoogleSorter sorter = new GoogleSorter();
 
     public RobotController(Exploration exp) {
+        magnet.setSpeed(800);
+        /*while (!touchL.isPressed()) {
+            System.out.println(light.readValue());
+        }
+        System.exit(0);*/
         RConsole.openUSB(1500);
         /*while (!touchL.isPressed()) {
          RConsole.println(sonic.getDistance() + "");
@@ -74,7 +84,9 @@ public class RobotController implements Controller {
     @Override
     public void move(int tiles) {
         ArrayList<Integer> tileData[] = new ArrayList[10];
-        for (int i = 0; i < tileData.length; i++) tileData[i] = new ArrayList<>();
+        for (int i = 0; i < tileData.length; i++) {
+            tileData[i] = new ArrayList<>();
+        }
 
         int x = exp.getX();
         int y = exp.getY();
@@ -116,28 +128,45 @@ public class RobotController implements Controller {
                 Button.waitForAnyPress();
                 System.exit(0);
             }
+
+            if (magnetUp && !magnet.isMoving()) {
+                magnet.rotate(-MAGNET_ANGLE, true);
+                magnetUp = false;
+            }
+
+            if (light.readValue() < LIGHT_RED && !magnetUp && !magnet.isMoving()) {
+                magnetUp = true;
+                magnet.rotate(MAGNET_ANGLE, true);
+            }
             if ((touchL.isPressed() || touchR.isPressed()) && singlePress == -1) {
                 singlePress = System.currentTimeMillis();
             }
+
             if (singlePress != -1 && System.currentTimeMillis() - singlePress > PANIC_TIME) {
                 panic();
             }
             if (read) {
                 int dist = sonic.getDistance();
-                if (dist == 255) continue;
+                if (dist == 255) {
+                    continue;
+                }
                 int sDeg = Math.abs(deg - left.getTachoCount());
                 int tile = -1;
                 for (int i = 0; i < 11; i++) { //docasne
                     int centerDeg = i * DEG_TILE + DEG_TILE / 2;
                     if (sDeg >= centerDeg + (DEG_TILE * SCAN_DISTANCE_FROM)
                             && sDeg <= centerDeg + DEG_TILE * SCAN_DISTANCE_TO) {
-                        if (tile != -1) RConsole.println("duplicate: " + sDeg);
+                        if (tile != -1) {
+                            RConsole.println("duplicate: " + sDeg);
+                        }
                         tile = i;
                     }
                 }
                 //debugovaci vypis
                 RConsole.println((tile == -1 ? "NONE" : ("" + tile)) + "\t" + sDeg + "\t" + dist);
-                if (tile != -1) tileData[tile].add(dist);
+                if (tile != -1) {
+                    tileData[tile].add(dist);
+                }
                 read = false;
             } else {
                 read = true;
@@ -271,8 +300,12 @@ public class RobotController implements Controller {
                 startAgain = true;
             }
             if (touchL.isPressed() || touchR.isPressed()) {
-                if (singlePress == -1) singlePress = System.currentTimeMillis();
-            } else singlePress = -1;
+                if (singlePress == -1) {
+                    singlePress = System.currentTimeMillis();
+                }
+            } else {
+                singlePress = -1;
+            }
             if (singlePress != -1 && System.currentTimeMillis() - singlePress > PANIC_TIME_DELTA) {
                 pullBack();
                 int coef = touchL.isPressed() ? 1 : (-1);

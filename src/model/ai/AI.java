@@ -6,7 +6,6 @@
 package model.ai;
 
 import java.awt.Point;
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import model.Direction;
 import model.Exploration;
