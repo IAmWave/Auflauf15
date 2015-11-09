@@ -53,7 +53,7 @@ public class RobotController implements Controller {
     final int MAGNET_ANGLE = 90;
     //PANIC MODE
     final int PANIC_TIME = 500;
-    final int PANIC_SPEED = 300;
+    final int PANIC_SPEED = 800;
     final int PANIC_ROTATION = 90;
     final int PANIC_TIME_DELTA = 150;
 
@@ -66,7 +66,7 @@ public class RobotController implements Controller {
          System.out.println(light.readValue());
          }
          System.exit(0);*/
-        RConsole.openUSB(1500);
+        RConsole.openUSB(2000);
         Thread magnetThread = new Thread() {
             public void run() {
                 while (Button.readButtons() != Button.ESCAPE.getId()) {
@@ -311,8 +311,10 @@ public class RobotController implements Controller {
                 singlePress = -1;
             }
             if (singlePress != -1 && System.currentTimeMillis() - singlePress > PANIC_TIME_DELTA) {
-                pullBack();
+                RConsole.println("ADWDAWD");
                 int coef = touchL.isPressed() ? 1 : (-1);
+                pullBack();
+                RConsole.println(coef + "");
                 left.rotate(PANIC_ROTATION * coef, true);
                 right.rotate(-PANIC_ROTATION * coef, false);
                 startAgain = true;
