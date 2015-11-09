@@ -58,16 +58,30 @@ public class RobotController implements Controller {
     final int PANIC_TIME_DELTA = 150;
 
     Exploration exp;
-    boolean magnetUp = false;
     GoogleSorter sorter = new GoogleSorter();
 
     public RobotController(Exploration exp) {
-        magnet.setSpeed(800);
+        magnet.setSpeed(magnet.getMaxSpeed());
         /*while (!touchL.isPressed()) {
-            System.out.println(light.readValue());
-        }
-        System.exit(0);*/
+         System.out.println(light.readValue());
+         }
+         System.exit(0);*/
         RConsole.openUSB(1500);
+        Thread magnetThread = new Thread() {
+            public void run() {
+                while (Button.readButtons() != Button.ESCAPE.getId()) {
+                    if (light.readValue() < LIGHT_RED && !magnet.isMoving()) {
+                        magnet.rotate(MAGNET_ANGLE, true);
+                        magnet.waitComplete();
+                        magnet.rotate(-MAGNET_ANGLE, true);
+                    }
+                    Delay.msDelay(50);
+                }
+            }
+
+        };
+        magnetThread.start();
+
         /*while (!touchL.isPressed()) {
          RConsole.println(sonic.getDistance() + "");
          }
@@ -129,15 +143,6 @@ public class RobotController implements Controller {
                 System.exit(0);
             }
 
-            if (magnetUp && !magnet.isMoving()) {
-                magnet.rotate(-MAGNET_ANGLE, true);
-                magnetUp = false;
-            }
-
-            if (light.readValue() < LIGHT_RED && !magnetUp && !magnet.isMoving()) {
-                magnetUp = true;
-                magnet.rotate(MAGNET_ANGLE, true);
-            }
             if ((touchL.isPressed() || touchR.isPressed()) && singlePress == -1) {
                 singlePress = System.currentTimeMillis();
             }
@@ -183,7 +188,6 @@ public class RobotController implements Controller {
             }
             Delay.msDelay(20);
         }
-
         left.flt(true);
         right.flt(true);
 
