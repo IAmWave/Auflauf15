@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package model;
 
 import model.ai.AI;
@@ -16,7 +11,7 @@ public class Exploration {
 
     public static final double MOVE_COST = 1.5;
     //vyssi = duveryhodnejsi
-    public static final double[] SCAN_FREE_COEF = {1, 0.8, 0.8};
+    public static final double[] SCAN_FREE_COEF = {1, 0.9, 0.8};
     public static final double[] SCAN_WALL_COEF = {1, 0, 0};
     ExplorationTile[][] map = new ExplorationTile[Map.WIDTH][Map.HEIGHT];
     int x = Map.START_X;
