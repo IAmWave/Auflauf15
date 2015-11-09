@@ -73,7 +73,7 @@ public class RobotController implements Controller {
                     if (light.readValue() < LIGHT_RED && !magnet.isMoving()) {
                         magnet.rotateTo(MAGNET_ANGLE, true);
                         magnet.waitComplete();
-                        magnet.rotateTo(0, true);
+                        magnet.rotate(-MAGNET_ANGLE, true);
                     }
                     Delay.msDelay(50);
                 }
