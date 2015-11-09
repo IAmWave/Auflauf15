@@ -7,6 +7,8 @@ package model.ai;
 
 import java.awt.Point;
 import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.Queue;
 import model.Direction;
 import model.Exploration;
 import model.Map;
@@ -20,6 +22,7 @@ public abstract class AI {
 
     protected static final double INF = 1e2;
     Exploration exp;
+    ArrayQueue<State> q = new ArrayQueue<>();
 
     public AI(Exploration exp) {
         this.exp = exp;
@@ -96,33 +99,27 @@ public abstract class AI {
         fromMatrix[exp.getX()][exp.getY()][exp.getDirection().n] = null;
         boolean[][][] done = new boolean[Map.WIDTH][Map.HEIGHT][4];
 
-        Heap<State> q = new Heap();
+        //ArrayQueue<State> q = new ArrayQueue();
+        q.reset();
         q.add(new State(exp.getX(), exp.getY(), exp.getDirection().n, 0));
 
         while (!q.isEmpty()) {
             State s = q.poll();
             if (done[s.x][s.y][s.z]) continue;
             done[s.x][s.y][s.z] = true;
-            //System.out.println(s.x + ", " + s.y + ", " + s.z);
-            if (exp.shouldVisit(s.x, s.y)) continue;
+            if (exp.getInterest(s.x, s.y) > 0.4) continue;
             for (int dir = 0; dir < 4; dir++) {
                 int turns = Math.abs(Direction.fromInt(dir).rotationTo(Direction.fromInt(s.z)));
-                if (matrix[s.x][s.y][dir] > matrix[s.x][s.y][s.z] + Exploration.TURN_COST * turns) {
-                    //if (matrix[s.x][s.y][dir] != INF) {
-                    //    q.remove(new State(s.x, s.y, dir, matrix[s.x][s.y][dir]));
-                    //}
+                if (matrix[s.x][s.y][dir] == INF) {
                     fromMatrix[s.x][s.y][dir] = s;
-                    matrix[s.x][s.y][dir] = matrix[s.x][s.y][s.z] + Exploration.TURN_COST * turns;
+                    matrix[s.x][s.y][dir] = matrix[s.x][s.y][s.z] + Exploration.MOVE_COST * turns;
                     q.add(new State(s.x, s.y, dir, matrix[s.x][s.y][dir]));
                 }
             }
             int x2 = s.x + Direction.fromInt(s.z).deltaX();
             int y2 = s.y + Direction.fromInt(s.z).deltaY();
             if (exp.possiblyFree(x2, y2)) {
-                if (matrix[x2][y2][s.z] > matrix[s.x][s.y][s.z] + Exploration.MOVE_COST) {
-                    //if (matrix[x2][y2][s.z] != INF) {
-                    //    q.remove(new State(x2, y2, s.z, matrix[x2][y2][s.z]));
-                    //}
+                if (matrix[x2][y2][s.z] == INF) {
                     fromMatrix[x2][y2][s.z] = s;
                     matrix[x2][y2][s.z] = matrix[s.x][s.y][s.z] + Exploration.MOVE_COST;
                     q.add(new State(x2, y2, s.z, matrix[x2][y2][s.z]));
@@ -140,7 +137,7 @@ public abstract class AI {
         return simpleMatrix;
     }
 
-    protected class State implements Numberable {
+    protected class State {
 
         int x, y, z;
         double dist;
@@ -151,72 +148,34 @@ public abstract class AI {
             this.z = z;
             this.dist = dist;
         }
-
-        @Override
-        public double toNumber() {
-            return dist;
-        }
     }
 
-    protected class Heap<E extends Numberable> {
+    protected class ArrayQueue<E> {
 
-        final static int MAX_SIZE = 2000; //max: width * height * 4
-        private ArrayList<E> arr;
-        private int size = 0;
+        ArrayList<E> list = new ArrayList<>();
+        int start = 0, end = 1;
 
-        protected Heap() {
-            arr = new ArrayList<>();
-            arr.add(null);
+        protected ArrayQueue() {
+            for (int i = 0; i < 1000; i++) list.add(null);
+        }
+
+        protected void reset() {
+            start = 0;
+            end = 1;
         }
 
         protected void add(E e) {
-            arr.add(e);
-            size++;
-            int i = size;
-            while (i > 1) {
-                if (arr.get(i).toNumber() < arr.get(i / 2).toNumber()) {
-                    swap(i, i / 2);
-                    i /= 2;
-                } else break;
-            }
+            list.set(end - 1, e);
+            end++;
         }
 
         protected E poll() {
-            if (isEmpty()) {
-                System.err.println("Empty heap polled.");
-                return null;
-            }
-            E res = arr.get(1);
-            arr.set(1, arr.get(size));
-            arr.remove(size);
-            size--;
-            int i = 1;
-            while (true) {
-                int best = i;
-                if (i * 2 <= size && arr.get(i * 2).toNumber() < arr.get(best).toNumber())
-                    best = i * 2;
-                if (i * 2 + 1 <= size && arr.get(i * 2 + 1).toNumber() < arr.get(best).toNumber())
-                    best = i * 2 + 1;
-                if (best == i) break;
-                swap(i, best);
-                i = best;
-            }
-            return res;
+            start++;
+            return list.get(start - 1);
         }
 
         protected boolean isEmpty() {
-            return size == 0;
+            return (end - start) == 1;
         }
-
-        private void swap(int ai, int bi) {
-            E temp = arr.get(ai);
-            arr.set(ai, arr.get(bi));
-            arr.set(bi, temp);
-        }
-    }
-
-    protected interface Numberable {
-
-        public double toNumber();
     }
 }

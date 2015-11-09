@@ -29,13 +29,13 @@ public class EmulatedController implements Controller {
     final static double TIME_LIMIT = 90;
 
     public EmulatedController(Exploration exp) {
-        map = new Map(new File("data/maps/05.map"));
+        map = new Map(new File("data/maps/22.map"));
         this.exp = exp;
     }
 
     @Override
     public void turn(int times) {
-        time += Math.abs(Exploration.TURN_COST * times);
+        time += Math.abs(Exploration.MOVE_COST * times);
         exp.print();
         exp.setRotation(Direction.fromInt((exp.getDirection().n + times + 4) % 4));
     }

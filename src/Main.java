@@ -2,6 +2,7 @@
 import controller.Controller;
 import controller.EmulatedController;
 import controller.RobotController;
+import lejos.nxt.Sound;
 import model.Exploration;
 import model.Move;
 
@@ -18,7 +19,9 @@ public class Main {
     public static void go(Exploration e, Controller c) { //hlavní metoda
         c.onStart();
         while (c.shouldContinue()) {
+            if(ROBOT) Sound.beep();
             Move next = e.decide();
+            if(ROBOT) Sound.beep();
             if (next.tiles == 0) {
                 System.out.println("Invalid move!");
                 break;
