@@ -17,8 +17,9 @@ public class Exploration {
     int x = Map.START_X;
     int y = Map.START_Y;
     Direction rot = Direction.UP;
-
+    boolean symmetry = false;
     AI ai;
+    Move decisionCache = null;
 
     public Exploration() {
         for (int x = 0; x < Map.WIDTH; x++) {
@@ -33,8 +34,20 @@ public class Exploration {
         ai = new GreedyAI(this);
     }
 
+    public void clearCache() {
+        decisionCache = null;
+    }
+
+    public void cacheDecision() {
+        decisionCache = ai.decide();
+    }
+
     public Move decide() {
-        return ai.decide();
+        if (decisionCache == null) {
+            return ai.decide();
+        } else {
+            return decisionCache;
+        }
     }
 
     public Direction getDirection() {
@@ -65,11 +78,15 @@ public class Exploration {
             cx += dir.deltaX();
             cy += dir.deltaY();
             map[cx][cy].wall = (1 - freeCoef) * map[cx][cy].wall;
+            if (symmetry)
+                map[Map.WIDTH - 1 - cx][cy].wall = (1 - freeCoef) * map[cx][cy].wall;
         }
         cx += dir.deltaX();
         cy += dir.deltaY();
         if (inBounds(cx, cy)) {
             map[cx][cy].wall = 1 - (1 - map[cx][cy].wall) * (1 - wallCoef);
+            if (symmetry)
+                map[Map.WIDTH - 1 - cx][cy].wall = 1 - (1 - map[cx][cy].wall) * (1 - wallCoef);
         }
     }
 
@@ -81,7 +98,9 @@ public class Exploration {
         if (!inBounds(x, y)) {
             return;
         }
+        if(map[x][y].visited) return; //vime, co vime, dalsi nas nezajima
         map[x][y] = tile;
+        if (symmetry) map[Map.WIDTH - 1 - x][y].wall = map[x][y].wall;
     }
 
     public static boolean inBounds(int x, int y) {
@@ -91,7 +110,8 @@ public class Exploration {
     public double getInterest(int x, int y) {
         if (!inBounds(x, y)) return 0;
         if (map[x][y].visited) return 0;
-        return 1 - map[x][y].wall;
+        if (map[x][y].wall > 0.5) return 0.5;
+        return 2 - map[x][y].wall;
     }
 
     public boolean possiblyFree(int x, int y) {
@@ -134,5 +154,9 @@ public class Exploration {
             System.out.println("|" + (y == 0 ? " " + getX() + " " + getY() : ""));
         }
         System.out.println(" ---------");
+    }
+
+    public void setSymmetry(boolean to) {
+        symmetry = to;
     }
 }

@@ -43,18 +43,21 @@ public class RobotController implements Controller {
     final int SLOW_DOWN_AT = 200;
     final int TO_WALL = 150;
     final int TO_WALL_SPEED = 300;
+    final int BACKWARDS_TO_WALL = 90; //150
+    final int BACKWARDS_TO_WALL_SPEED = 400; //300
     //SCAN
     final double SCAN_DISTANCE_FROM = -0.8; //v jakych uhlech je scan v jakych policcich
     final double SCAN_DISTANCE_TO = -0.2;
     final int SCAN_VALUE_OFFSET = -7; //-7
     final int SCAN_VALUE_TILE = 17;
     //LIGHT
-    final int LIGHT_RED = 47;
+    final int LIGHT_RED = 30; //soutez: >30, trenink: <47
     final int MAGNET_ANGLE = 90;
     //PANIC MODE
-    final int PANIC_TIME = 500;
-    final int PANIC_SPEED = 800;
-    final int PANIC_ROTATION = 90;
+    final int PANIC_TIME = 250; //za jak dlouho zacne panikarit
+    final int PANIC_SPEED = 600;
+    final int PANIC_ROTATION = 60;
+    final int PANIC_FROM_WALL = 30;
     final int PANIC_TIME_DELTA = 150;
 
     Exploration exp;
@@ -62,6 +65,7 @@ public class RobotController implements Controller {
 
     public RobotController(Exploration exp) {
         magnet.setSpeed(magnet.getMaxSpeed());
+        light.setFloodlight(false);
         /*while (!touchL.isPressed()) {
          System.out.println(light.readValue());
          }
@@ -70,7 +74,7 @@ public class RobotController implements Controller {
         Thread magnetThread = new Thread() {
             public void run() {
                 while (Button.readButtons() != Button.ESCAPE.getId()) {
-                    if (light.readValue() < LIGHT_RED && !magnet.isMoving()) {
+                    if (light.readValue() > LIGHT_RED && !magnet.isMoving()) {
                         magnet.rotateTo(MAGNET_ANGLE, true);
                         magnet.waitComplete();
                         magnet.rotate(-MAGNET_ANGLE, true);
@@ -108,16 +112,17 @@ public class RobotController implements Controller {
         boolean fromWall = false;
         if (isBumpable(x, y, exp.getDirection().turnLeft().turnLeft())) {
             //COUVANI PRED JIZDOU
-            left.setSpeed(TO_WALL_SPEED);
-            right.setSpeed(TO_WALL_SPEED);
-            left.rotate(TO_WALL, true);
-            right.rotate(TO_WALL);
+            left.setSpeed(BACKWARDS_TO_WALL_SPEED);
+            right.setSpeed(BACKWARDS_TO_WALL_SPEED);
+            left.rotate(BACKWARDS_TO_WALL, true);
+            right.rotate(BACKWARDS_TO_WALL);
             //Button.waitForAnyPress();
             fromWall = true;
         }
         boolean bump = false;
         int SLOW_DOWN = SLOW_DOWN_AT;
-        if (isBumpable(x + tiles * exp.getDirection().deltaX(), y + tiles * exp.getDirection().deltaY(), exp.getDirection())) {
+        if (isBumpable(x + tiles * exp.getDirection().deltaX(),
+                y + tiles * exp.getDirection().deltaY(), exp.getDirection())) {
             bump = true;
             SLOW_DOWN -= TO_WALL;
         }
@@ -135,6 +140,7 @@ public class RobotController implements Controller {
         boolean accelerate = true;
         boolean read = true;
         long singlePress = -1;
+        int minTile = 0;
         while (left.isMoving() && !(touchL.isPressed() && touchR.isPressed())) {
             if (Button.readButtons() == Button.ESCAPE.getId()) {
                 exp.print();
@@ -152,30 +158,23 @@ public class RobotController implements Controller {
             }
             if (read) {
                 int dist = sonic.getDistance();
-                if (dist == 255) {
-                    continue;
-                }
+                if (dist == 255) continue;
                 int sDeg = Math.abs(deg - left.getTachoCount());
                 int tile = -1;
-                for (int i = 0; i < 11; i++) { //docasne
+                for (int i = minTile; i < 11; i++) { //docasne
                     int centerDeg = i * DEG_TILE + DEG_TILE / 2;
                     if (sDeg >= centerDeg + (DEG_TILE * SCAN_DISTANCE_FROM)
                             && sDeg <= centerDeg + DEG_TILE * SCAN_DISTANCE_TO) {
-                        if (tile != -1) {
-                            RConsole.println("duplicate: " + sDeg);
-                        }
                         tile = i;
+                        minTile = i;
+                        break;
                     }
                 }
                 //debugovaci vypis
                 RConsole.println((tile == -1 ? "NONE" : ("" + tile)) + "\t" + sDeg + "\t" + dist);
-                if (tile != -1) {
-                    tileData[tile].add(dist);
-                }
-                read = false;
-            } else {
-                read = true;
+                if (tile != -1) tileData[tile].add(dist);
             }
+            read = !read;
             if (accelerate && left.getSpeed() < this.MAX_SPEED) {
                 right.setSpeed(left.getSpeed() + ACCELERATION);
                 left.setSpeed(left.getSpeed() + ACCELERATION);
@@ -190,51 +189,30 @@ public class RobotController implements Controller {
         }
         left.flt(true);
         right.flt(true);
-
-        int tilesFinished = Math.abs((int) Math.round((left.getTachoCount() - deg + 0.0) / DEG_TILE));
-        for (int i = 0; i <= tilesFinished; i++) {
-            //RConsole.println(x + " " + y + ": ");
-            if (tileData[i].size() > 0) {
-                Integer[] ints = tileData[i].toArray(new Integer[tileData[i].size()]);
-                int[] ar = new int[ints.length];
-                for (int j = 0; j < ar.length; j++) {
-                    ar[j] = ints[j];
-                }
-                sorter.sort(ar);
-                int medianTiles = (ar[ar.length / 2] + SCAN_VALUE_OFFSET) / SCAN_VALUE_TILE;
-                RConsole.println("MEDIAN " + ar[ar.length / 2]);
-                RConsole.println("Handling: " + x + ", " + y
-                        + " " + exp.getDirection().turnRight() + " " + medianTiles);
-                exp.handleScan(x, y, exp.getDirection().turnRight(), medianTiles);
-                //RConsole.println("" + ar[ar.length / 2]);
-            } else {
-                //RConsole.println("NO DATA MEASURED");
-            }
-            if (i < tilesFinished) {
-                x += exp.getDirection().deltaX();
-                y += exp.getDirection().deltaY();
-                exp.setTile(x, y, new ExplorationTile(false));
-            }
-        }
-        exp.setX(x);
-        exp.setY(y);
         if (!Exploration.inBounds(x, y)) {
             panic(); //Something, somewhere has gone horribly wrong.
         }
+
+        int tilesFinished = Math.abs((int) Math.round((left.getTachoCount() - deg + 0.0) / DEG_TILE));
+        handleMove(tileData, tilesFinished, x, y);
+
         if (touchL.isPressed() && touchR.isPressed()) { //konec dotykem
-            x += exp.getDirection().deltaX();
-            y += exp.getDirection().deltaY();
+            x = exp.getX() + exp.getDirection().deltaX();
+            y = exp.getY() + exp.getDirection().deltaY();
             exp.setTile(x, y, new ExplorationTile(true));
             Delay.msDelay(100);
             left.setSpeed(FROM_WALL_SPEED);
             right.setSpeed(FROM_WALL_SPEED);
             left.rotate(FROM_WALL, true);
-            right.rotate(FROM_WALL, false);
+            right.rotate(FROM_WALL, true);
+            exp.cacheDecision();
         }
+        left.waitComplete();
     }
 
     @Override
     public void turn(int times) {//times>0 => doprava
+        exp.clearCache();
         exp.print();
         int targetDeg = 0;
         if (Math.abs(times) == 1) {
@@ -285,34 +263,30 @@ public class RobotController implements Controller {
         Sound.beepSequenceUp();
         Button.waitForAnyPress();
         Delay.msDelay(500);
-        long singlePress = -1;
         boolean startAgain = true;
         while (Button.readButtons() == 0) {
             if (startAgain) {
                 left.setSpeed(PANIC_SPEED);
                 right.setSpeed(PANIC_SPEED);
-                singlePress = -1;
                 left.backward();
                 right.backward();
                 startAgain = false;
             }
-            if (touchL.isPressed() && touchR.isPressed()) {
-                //otocit o 90
-                pullBack();
-                left.rotate(DEG_TURN_90, true);
-                right.rotate(-DEG_TURN_90, false);
-                startAgain = true;
-            }
+
+            /*if (touchL.isPressed() && touchR.isPressed()) {
+             //otocit o 90
+             pullBack();
+             left.rotate(DEG_TURN_90, true);
+             right.rotate(-DEG_TURN_90, false);
+             startAgain = true;
+             }*/
             if (touchL.isPressed() || touchR.isPressed()) {
-                if (singlePress == -1) {
-                    singlePress = System.currentTimeMillis();
-                }
-            } else {
-                singlePress = -1;
-            }
-            if (singlePress != -1 && System.currentTimeMillis() - singlePress > PANIC_TIME_DELTA) {
-                int coef = touchL.isPressed() ? 1 : (-1);
-                pullBack();
+                left.flt(true);
+                right.flt(true);
+                Delay.msDelay(100);
+                left.rotate(PANIC_FROM_WALL, true);
+                right.rotate(PANIC_FROM_WALL, false);
+                int coef = touchL.isPressed() ? (1) : (-1);
                 left.rotate(PANIC_ROTATION * coef, true);
                 right.rotate(-PANIC_ROTATION * coef, false);
                 startAgain = true;
@@ -322,16 +296,33 @@ public class RobotController implements Controller {
         System.exit(0);
     }
 
-    private void pullBack() {
-        left.flt(true);
-        right.flt(true);
-        Delay.msDelay(100);
-        left.setSpeed(FROM_WALL_SPEED);
-        right.setSpeed(FROM_WALL_SPEED);
-        left.rotate(FROM_WALL, true);
-        right.rotate(FROM_WALL, false);
-        left.setSpeed(PANIC_SPEED);
-        right.setSpeed(PANIC_SPEED);
+    private void handleMove(ArrayList<Integer>[] tileData, int tilesFinished, int x, int y) {
+        for (int i = 0; i <= tilesFinished; i++) {
+            //RConsole.println(x + " " + y + ": ");
+            if (tileData[i].size() > 0) {
+                Integer[] ints = tileData[i].toArray(new Integer[tileData[i].size()]);
+                int[] ar = new int[ints.length];
+                for (int j = 0; j < ar.length; j++) {
+                    ar[j] = ints[j];
+                }
+                sorter.sort(ar);
+                int medianTiles = (ar[ar.length / 2] + SCAN_VALUE_OFFSET) / SCAN_VALUE_TILE;
+                RConsole.println("MEDIAN " + ar[ar.length / 2]);
+                RConsole.println("Handling: " + x + ", " + y
+                        + " " + exp.getDirection().turnRight() + " " + medianTiles);
+                exp.handleScan(x, y, exp.getDirection().turnRight(), medianTiles);
+                //RConsole.println("" + ar[ar.length / 2]);
+            } else {
+                //RConsole.println("NO DATA MEASURED");
+            }
+            if (i < tilesFinished) {
+                x += exp.getDirection().deltaX();
+                y += exp.getDirection().deltaY();
+                exp.setTile(x, y, new ExplorationTile(false));
+            }
+        }
+        exp.setX(x);
+        exp.setY(y);
     }
 
     @Override

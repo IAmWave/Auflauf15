@@ -31,10 +31,22 @@ public class EmulatedController implements Controller {
     public EmulatedController(Exploration exp) {
         map = new Map(new File("data/maps/22.map"));
         this.exp = exp;
+        Tile[][] t = map.getTiles();
+        boolean sym = true;
+        for (int x = 0; x < Map.WIDTH; x++) {
+            for (int y = 0; y < Map.HEIGHT; y++) {
+                if(!t[x][y].equals(t[Map.WIDTH-1-x][y])) {
+                    sym = false;
+                    break;
+                }
+            }
+        }
+        exp.setSymmetry(sym);
     }
 
     @Override
     public void turn(int times) {
+        exp.clearCache();
         time += Math.abs(Exploration.MOVE_COST * times);
         exp.print();
         exp.setRotation(Direction.fromInt((exp.getDirection().n + times + 4) % 4));
@@ -58,6 +70,7 @@ public class EmulatedController implements Controller {
         } else {
             exp.setTile(nx, ny, new ExplorationTile(true));
         }
+        exp.cacheDecision();
     }
 
     private void scan() {
