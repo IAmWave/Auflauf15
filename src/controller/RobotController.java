@@ -43,7 +43,7 @@ public class RobotController implements Controller {
     final int SLOW_DOWN_AT = 200;
     final int TO_WALL = 150;
     final int TO_WALL_SPEED = 300;
-    final int BACKWARDS_TO_WALL = 90; //150
+    final int BACKWARDS_TO_WALL = 120; //150
     final int BACKWARDS_TO_WALL_SPEED = 400; //300
     //SCAN
     final double SCAN_DISTANCE_FROM = -0.8; //v jakych uhlech je scan v jakych policcich
@@ -158,7 +158,9 @@ public class RobotController implements Controller {
             }
             if (read) {
                 int dist = sonic.getDistance();
-                if (dist == 255) continue;
+                if (dist == 255) {
+                    continue;
+                }
                 int sDeg = Math.abs(deg - left.getTachoCount());
                 int tile = -1;
                 for (int i = minTile; i < 11; i++) { //docasne
@@ -172,7 +174,9 @@ public class RobotController implements Controller {
                 }
                 //debugovaci vypis
                 RConsole.println((tile == -1 ? "NONE" : ("" + tile)) + "\t" + sDeg + "\t" + dist);
-                if (tile != -1) tileData[tile].add(dist);
+                if (tile != -1) {
+                    tileData[tile].add(dist);
+                }
             }
             read = !read;
             if (accelerate && left.getSpeed() < this.MAX_SPEED) {
@@ -281,12 +285,12 @@ public class RobotController implements Controller {
              startAgain = true;
              }*/
             if (touchL.isPressed() || touchR.isPressed()) {
+                int coef = touchL.isPressed() ? (1) : (-1); //NEPRESOUVAT PLS
                 left.flt(true);
                 right.flt(true);
                 Delay.msDelay(100);
                 left.rotate(PANIC_FROM_WALL, true);
                 right.rotate(PANIC_FROM_WALL, false);
-                int coef = touchL.isPressed() ? (1) : (-1);
                 left.rotate(PANIC_ROTATION * coef, true);
                 right.rotate(-PANIC_ROTATION * coef, false);
                 startAgain = true;
@@ -338,6 +342,7 @@ public class RobotController implements Controller {
 
     @Override
     public void onFinish() {
+        panic();
         exp.print();
         Delay.msDelay(1000);
         Button.waitForAnyPress();
