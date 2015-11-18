@@ -2,7 +2,10 @@
 import controller.Controller;
 import controller.EmulatedController;
 import controller.RobotController;
+import lejos.nxt.Button;
+import lejos.nxt.LCD;
 import lejos.nxt.Sound;
+import lejos.util.Delay;
 import model.Exploration;
 import model.Move;
 
@@ -12,16 +15,36 @@ public class Main {
 
     public static void main(String[] args) {
         Exploration e = new Exploration();
-        Controller c = ROBOT ? (new RobotController(e)) : (new EmulatedController(e));
+        boolean panic = false;
+        boolean fromStart = false;
+        if (ROBOT) {
+            while (Button.readButtons() != Button.ESCAPE.getId()) {
+                LCD.clear();
+                System.out.println("PANIC: " + panic);
+                System.out.println("FROMSTART: " + fromStart);
+                if (Button.readButtons() == Button.RIGHT.getId()) {
+                    fromStart = !fromStart;
+                }
+                if (Button.readButtons() == Button.LEFT.getId()) {
+                    panic = !panic;
+                }
+                Delay.msDelay(20);
+            }
+        }
+        Controller c = ROBOT ? (new RobotController(e, panic, fromStart)) : (new EmulatedController(e));
         go(e, c);
     }
 
     public static void go(Exploration e, Controller c) { //hlavní metoda
         c.onStart();
         while (c.shouldContinue()) {
-            if(ROBOT) Sound.beep();
+            if (ROBOT) {
+                Sound.beep();
+            }
             Move next = e.decide();
-            if(ROBOT) Sound.beep();
+            if (ROBOT) {
+                Sound.beep();
+            }
             if (next.tiles == 0) {
                 System.out.println("Invalid move!");
                 break;

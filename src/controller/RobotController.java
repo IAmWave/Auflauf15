@@ -66,7 +66,7 @@ public class RobotController implements Controller {
     Exploration exp;
     GoogleSorter sorter = new GoogleSorter();
 
-    public RobotController(Exploration exp) {
+    public RobotController(Exploration exp, boolean panic, boolean fromStart) {
         magnet.setSpeed(magnet.getMaxSpeed());
         light.setFloodlight(false);
         /*while (!touchL.isPressed()) {
@@ -94,6 +94,12 @@ public class RobotController implements Controller {
          System.exit(0);*/
         this.exp = exp;
         exp.print();
+        if (panic) {
+            if (fromStart) {
+                move(10);
+            }
+            panic();
+        }
         //KALIBROVACI CYKLUS
         /*for (int i = 0; i < 10; i++) {
          turn(2);
