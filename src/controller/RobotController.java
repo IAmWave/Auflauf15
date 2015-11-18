@@ -60,6 +60,9 @@ public class RobotController implements Controller {
     final int PANIC_FROM_WALL = 30;
     final int PANIC_TIME_DELTA = 150;
 
+    final int DISTANCE_MIN = 4;
+    final int DISTANCE_MAX = 10;
+
     Exploration exp;
     GoogleSorter sorter = new GoogleSorter();
 
@@ -82,7 +85,6 @@ public class RobotController implements Controller {
                     Delay.msDelay(50);
                 }
             }
-
         };
         magnetThread.start();
 
@@ -264,6 +266,26 @@ public class RobotController implements Controller {
     }
 
     private void panic() {
+        left.backward();
+        right.backward();
+        while (Button.readButtons() != Button.ESCAPE.getId()) {
+            if (touchR.isPressed()) {
+                left.rotate(PANIC_FROM_WALL, true);
+                right.rotate(PANIC_FROM_WALL, false);
+                turn(-1);
+                right.setSpeed(MAX_SPEED);
+                left.backward();
+                right.backward();
+            }
+            int read = Math.min(DISTANCE_MAX, Math.max(DISTANCE_MIN, sonic.getDistance()));
+            double coef = ((double) read - DISTANCE_MIN) / ((double) DISTANCE_MAX - DISTANCE_MIN);
+            System.out.println(coef);
+            left.setSpeed((int) (MIN_SPEED + (MAX_SPEED - MIN_SPEED) * (1 - coef)));
+            right.setSpeed((int) (MIN_SPEED + (MAX_SPEED - MIN_SPEED) * (coef)));
+        }
+    }
+
+    private void oldPanic() {
         Sound.beepSequenceUp();
         Button.waitForAnyPress();
         Delay.msDelay(500);
