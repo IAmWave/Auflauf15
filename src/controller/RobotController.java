@@ -73,7 +73,7 @@ public class RobotController implements Controller {
          System.out.println(light.readValue());
          }
          System.exit(0);*/
-        RConsole.openUSB(2000);
+        //RConsole.openUSB(2000);
         Thread magnetThread = new Thread() {
             public void run() {
                 while (Button.readButtons() != Button.ESCAPE.getId()) {
@@ -96,15 +96,26 @@ public class RobotController implements Controller {
         exp.print();
         if (panic) {
             if (fromStart) {
-                move(10);
+                left.setSpeed(MAX_SPEED);
+                right.setSpeed(MAX_SPEED);
+                left.backward();
+                right.backward();
+                while (!touchL.isPressed() && !touchR.isPressed()) {
+                    Delay.msDelay(20);
+                }
+                left.flt();
+                right.flt();
             }
             panic();
         }
+
         //KALIBROVACI CYKLUS
         /*for (int i = 0; i < 10; i++) {
          turn(2);
          }
-         System.exit(0);*/
+         System.exit(0);*/ {
+
+        }
     }
 
     @Override
