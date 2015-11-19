@@ -10,6 +10,8 @@ import model.Move;
  */
 public class GreedyAI extends AI {
 
+    public static final double EPS = 1e-5;
+
     public GreedyAI(Exploration exp) {
         super(exp);
     }
@@ -21,13 +23,17 @@ public class GreedyAI extends AI {
         int bx = 0, by = 0;
         for (int x = 0; x < Map.WIDTH; x++) {
             for (int y = 0; y < Map.HEIGHT; y++) {
+                if (simpleMatrix[x][y] == INF) continue;
                 double interest = exp.getInterest(x, y); //vyssi = lepsi
                 if (interest != 0) {
                     interest = simpleMatrix[x][y] / interest; //nyni mensi = lepsi
-                    if (interest < closest) {
-                        closest = interest;
-                        bx = x;
-                        by = y;
+                    System.out.println(x + ", " + y + ": " + interest);
+                    if (interest <= closest) {
+                        if (interest < closest || (exp.getPreferLeft() == (x < bx))) {
+                            closest = interest;
+                            bx = x;
+                            by = y;
+                        }
                     }
                 }
             }

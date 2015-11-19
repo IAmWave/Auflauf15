@@ -11,7 +11,7 @@ package model;
  */
 public class ExplorationTile {
 
-    public double wall = 0.5;
+    private double wall = 0.5;
     public boolean visited = false;
 
     public ExplorationTile() {
@@ -20,6 +20,15 @@ public class ExplorationTile {
     public ExplorationTile(boolean isWall) {
         wall = isWall ? 1 : 0;
         visited = true;
+    }
+
+    public double getWall() {
+        return wall;
+    }
+
+    public void setWall(double wall) {
+        this.wall = wall;
+        if (wall == 1) visited = true;
     }
 
     public char toChar() {

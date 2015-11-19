@@ -28,14 +28,14 @@ public class EmulatedController implements Controller {
     int doneAt90 = -1;
     final static double TIME_LIMIT = 90;
 
-    public EmulatedController(Exploration exp) {
-        map = new Map(new File("data/maps/22.map"));
+    public EmulatedController(Exploration exp, String mapPath) {
+        map = new Map(new File(mapPath));
         this.exp = exp;
         Tile[][] t = map.getTiles();
         boolean sym = true;
         for (int x = 0; x < Map.WIDTH; x++) {
             for (int y = 0; y < Map.HEIGHT; y++) {
-                if(!t[x][y].equals(t[Map.WIDTH-1-x][y])) {
+                if (!t[x][y].equals(t[Map.WIDTH - 1 - x][y])) {
                     sym = false;
                     break;
                 }
@@ -48,6 +48,7 @@ public class EmulatedController implements Controller {
     public void turn(int times) {
         exp.clearCache();
         time += Math.abs(Exploration.MOVE_COST * times);
+        System.out.println("Time: " + (int)time);
         exp.print();
         exp.setRotation(Direction.fromInt((exp.getDirection().n + times + 4) % 4));
     }
@@ -117,7 +118,7 @@ public class EmulatedController implements Controller {
         if (time > TIME_LIMIT)
             System.out.println("Unfinished at 90: " + (Map.OPEN - doneAt90));
         System.out.println("Unfinished: " + (Map.OPEN - done));
-        System.out.println("Robot time: " + time);
+        System.out.println("Robot time: " + (int)time);
         System.out.println("Computation time: " + (System.currentTimeMillis() - startTime) + " ms");
     }
 }

@@ -13,7 +13,7 @@ import model.Move;
  */
 public abstract class AI {
 
-    protected static final double INF = 1e2;
+    protected static final double INF = 1e9;
     Exploration exp;
     ArrayQueue<State> q = new ArrayQueue<>();
 

@@ -2,6 +2,7 @@ package controller;
 
 import java.util.ArrayList;
 import lejos.nxt.Button;
+import lejos.nxt.LCD;
 import lejos.nxt.LightSensor;
 import lejos.nxt.Motor;
 import lejos.nxt.NXTRegulatedMotor;
@@ -43,8 +44,8 @@ public class RobotController implements Controller {
     final int SLOW_DOWN_AT = 200;
     final int TO_WALL = 150;
     final int TO_WALL_SPEED = 300;
-    final int BACKWARDS_TO_WALL = 120; //150
-    final int BACKWARDS_TO_WALL_SPEED = 400; //300
+    final int BACKWARDS_TO_WALL = 150; //150
+    final int BACKWARDS_TO_WALL_SPEED = 300; //300
     //SCAN
     final double SCAN_DISTANCE_FROM = -0.8; //v jakych uhlech je scan v jakych policcich
     final double SCAN_DISTANCE_TO = -0.2;
@@ -59,6 +60,8 @@ public class RobotController implements Controller {
     final int PANIC_ROTATION = 60;
     final int PANIC_FROM_WALL = 30;
     final int PANIC_TIME_DELTA = 150;
+    //DEBUG
+    final boolean DEBUG_PAUSE = false;
 
     Exploration exp;
     GoogleSorter sorter = new GoogleSorter();
@@ -199,11 +202,10 @@ public class RobotController implements Controller {
 
         int tilesFinished = Math.abs((int) Math.round((left.getTachoCount() - deg + 0.0) / DEG_TILE));
         handleMove(tileData, tilesFinished, x, y);
-
-        if (touchL.isPressed() && touchR.isPressed()) { //konec dotykem
-            x = exp.getX() + exp.getDirection().deltaX();
-            y = exp.getY() + exp.getDirection().deltaY();
-            exp.setTile(x, y, new ExplorationTile(true));
+        int nx = exp.getX() + exp.getDirection().deltaX();
+        int ny = exp.getY() + exp.getDirection().deltaY();
+        if ((touchL.isPressed() && touchR.isPressed()) || !Exploration.inBounds(nx, ny)) {
+            exp.setTile(nx, ny, new ExplorationTile(true));
             Delay.msDelay(100);
             left.setSpeed(FROM_WALL_SPEED);
             right.setSpeed(FROM_WALL_SPEED);
@@ -249,6 +251,7 @@ public class RobotController implements Controller {
         }
         left.flt(true);
         right.flt(true);
+        if(DEBUG_PAUSE) Button.waitForAnyPress();
     }
 
     private boolean isBumpable(int x, int y, Direction dir) {
@@ -335,7 +338,17 @@ public class RobotController implements Controller {
     }
 
     @Override
-    public void onStart() { //vyjede ze startu
+    public void onStart() { //Nastavení, start
+        System.out.println("Sym: " + exp.getSymmetry());
+        while (Button.readButtons() != Button.ENTER.getId()) {
+            if (Button.readButtons() == Button.RIGHT.getId()) {
+                exp.setSymmetry(!exp.getSymmetry());
+                LCD.clear();
+                System.out.println("Sym: " + exp.getSymmetry());
+                Delay.msDelay(1000);
+            }
+            Delay.msDelay(100);
+        }
         exp.setY(exp.getY() + 1); //jinak si mysli, ze je vys
         move(3);
     }

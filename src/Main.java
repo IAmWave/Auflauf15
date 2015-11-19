@@ -8,20 +8,22 @@ import model.Move;
 
 public class Main {
 
-    static final boolean ROBOT = true;
+    static boolean ROBOT = true;
 
     public static void main(String[] args) {
+        if (args.length != 0 && args[0].equals("emulator")) ROBOT = false;
         Exploration e = new Exploration();
-        Controller c = ROBOT ? (new RobotController(e)) : (new EmulatedController(e));
+        Controller c = ROBOT ? (new RobotController(e))
+                : (new EmulatedController(e, "data/maps/22.map"));
         go(e, c);
     }
 
     public static void go(Exploration e, Controller c) { //hlavní metoda
         c.onStart();
         while (c.shouldContinue()) {
-            if(ROBOT) Sound.beep();
+            if (ROBOT) Sound.beep();
             Move next = e.decide();
-            if(ROBOT) Sound.beep();
+            if (ROBOT) Sound.beep();
             if (next.tiles == 0) {
                 System.out.println("Invalid move!");
                 break;

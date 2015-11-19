@@ -9,15 +9,19 @@ import model.ai.GreedyAI;
  */
 public class Exploration {
 
-    public static final double MOVE_COST = 1.5;
+    public static final double MOVE_COST = 1.4;
     //vyssi = duveryhodnejsi
     public static final double[] SCAN_FREE_COEF = {1, 0.9, 0.8};
     public static final double[] SCAN_WALL_COEF = {1, 0, 0};
+    public static final double SINGLE_INTEREST = 0.01;
+
     ExplorationTile[][] map = new ExplorationTile[Map.WIDTH][Map.HEIGHT];
     int x = Map.START_X;
     int y = Map.START_Y;
     Direction rot = Direction.UP;
     boolean symmetry = false;
+    boolean skipSingles = true;
+    boolean preferLeft = false;
     AI ai;
     Move decisionCache = null;
 
@@ -77,16 +81,16 @@ public class Exploration {
         for (int i = 0; i < value; i++) {
             cx += dir.deltaX();
             cy += dir.deltaY();
-            map[cx][cy].wall = (1 - freeCoef) * map[cx][cy].wall;
+            map[cx][cy].setWall((1 - freeCoef) * map[cx][cy].getWall());
             if (symmetry)
-                map[Map.WIDTH - 1 - cx][cy].wall = (1 - freeCoef) * map[cx][cy].wall;
+                map[Map.WIDTH - 1 - cx][cy].setWall(map[cx][cy].getWall());
         }
         cx += dir.deltaX();
         cy += dir.deltaY();
         if (inBounds(cx, cy)) {
-            map[cx][cy].wall = 1 - (1 - map[cx][cy].wall) * (1 - wallCoef);
+            map[cx][cy].setWall(1 - (1 - map[cx][cy].getWall()) * (1 - wallCoef));
             if (symmetry)
-                map[Map.WIDTH - 1 - cx][cy].wall = 1 - (1 - map[cx][cy].wall) * (1 - wallCoef);
+                map[Map.WIDTH - 1 - cx][cy].setWall(map[cx][cy].getWall());
         }
     }
 
@@ -98,9 +102,9 @@ public class Exploration {
         if (!inBounds(x, y)) {
             return;
         }
-        if(map[x][y].visited) return; //vime, co vime, dalsi nas nezajima
+        if (map[x][y].visited) return; //vime, co vime, dalsi nas nezajima
         map[x][y] = tile;
-        if (symmetry) map[Map.WIDTH - 1 - x][y].wall = map[x][y].wall;
+        if (symmetry) map[Map.WIDTH - 1 - x][y].setWall(map[x][y].getWall());
     }
 
     public static boolean inBounds(int x, int y) {
@@ -110,15 +114,26 @@ public class Exploration {
     public double getInterest(int x, int y) {
         if (!inBounds(x, y)) return 0;
         if (map[x][y].visited) return 0;
-        if (map[x][y].wall > 0.5) return 0.5;
-        return 2 - map[x][y].wall;
+        if (skipSingles) {
+            int walls = 0;
+            for (int i = 0; i < 4; i++) {
+                if (!possiblyFree(x + Direction.fromInt(i).deltaX(),
+                        y + Direction.fromInt(i).deltaY())) {
+                    walls++;
+                }
+            }
+            if(walls >= 3) return SINGLE_INTEREST;
+        }
+        if(map[x][y].getWall() == 0.5) return 2;
+        if (map[x][y].getWall() > 0.5) return 0.5;
+        return 2 - map[x][y].getWall();
     }
 
     public boolean possiblyFree(int x, int y) {
         if (!inBounds(x, y)) {
             return false;
         }
-        if (map[x][y].wall == 1) {
+        if (map[x][y].getWall() == 1) {
             return false;
         }
         return true;
@@ -158,5 +173,13 @@ public class Exploration {
 
     public void setSymmetry(boolean to) {
         symmetry = to;
+    }
+
+    public boolean getSymmetry() {
+        return symmetry;
+    }
+    
+    public boolean getPreferLeft(){
+        return preferLeft;
     }
 }
