@@ -38,7 +38,7 @@ public class RobotController implements Controller {
     final int DEG_TURN_90 = 182;
     final int DEG_TURN_180 = 366;
     final int ACCELERATION = 25;
-    final int DECCELERATION_TIME = 70;
+    final int DECCELERATION_TIME = 30; //70
     final int FROM_WALL = 70;
     final int FROM_WALL_SPEED = 100;
     final int SLOW_DOWN_AT = 200;
@@ -60,20 +60,24 @@ public class RobotController implements Controller {
     final int PANIC_ROTATION = 60;
     final int PANIC_FROM_WALL = 30;
     final int PANIC_TIME_DELTA = 150;
+    final int PANIC_UNSTUCK_TIME = 3000; //jak dlouho se musi tocit na miste
     //DEBUG
     final boolean DEBUG_PAUSE = false;
+
+    final int DISTANCE_MIN = 4;
+    final int DISTANCE_MAX = 10;
 
     Exploration exp;
     GoogleSorter sorter = new GoogleSorter();
 
-    public RobotController(Exploration exp) {
+    public RobotController(Exploration exp, boolean panic, boolean fromStart) {
         magnet.setSpeed(magnet.getMaxSpeed());
         light.setFloodlight(false);
         /*while (!touchL.isPressed()) {
          System.out.println(light.readValue());
          }
          System.exit(0);*/
-        RConsole.openUSB(2000);
+        //RConsole.openUSB(2000);
         Thread magnetThread = new Thread() {
             public void run() {
                 while (Button.readButtons() != Button.ESCAPE.getId()) {
@@ -85,7 +89,6 @@ public class RobotController implements Controller {
                     Delay.msDelay(50);
                 }
             }
-
         };
         magnetThread.start();
 
@@ -95,11 +98,21 @@ public class RobotController implements Controller {
          System.exit(0);*/
         this.exp = exp;
         exp.print();
+        if (panic) {
+            if (fromStart) {
+                goUntilWall();
+            }
+            panic();
+            System.exit(0);
+        }
+
         //KALIBROVACI CYKLUS
         /*for (int i = 0; i < 10; i++) {
          turn(2);
          }
-         System.exit(0);*/
+         System.exit(0);*/ {
+
+        }
     }
 
     @Override
@@ -251,7 +264,7 @@ public class RobotController implements Controller {
         }
         left.flt(true);
         right.flt(true);
-        if(DEBUG_PAUSE) Button.waitForAnyPress();
+        if (DEBUG_PAUSE) Button.waitForAnyPress();
     }
 
     private boolean isBumpable(int x, int y, Direction dir) {
@@ -267,6 +280,38 @@ public class RobotController implements Controller {
     }
 
     private void panic() {
+        left.backward();
+        right.backward();
+        long overTime = -1;
+        while (Button.readButtons() != Button.ESCAPE.getId()) {
+            boolean doRotate = false;
+            int raw = sonic.getDistance();
+            if (raw > DISTANCE_MAX) {
+                if (overTime == -1) overTime = System.currentTimeMillis();
+                else {
+                    if (System.currentTimeMillis() - overTime > PANIC_UNSTUCK_TIME) {
+                        overTime = -1;
+                        goUntilWall();
+                        doRotate = true;
+                    }
+                }
+            } else overTime = -1;
+            if (touchR.isPressed() || doRotate) {
+                left.rotate(PANIC_FROM_WALL, true);
+                right.rotate(PANIC_FROM_WALL, false);
+                turn(-1);
+                right.setSpeed(MAX_SPEED);
+                left.backward();
+                right.backward();
+            }
+            int read = Math.min(DISTANCE_MAX, Math.max(DISTANCE_MIN, raw));
+            double coef = ((double) read - DISTANCE_MIN) / ((double) DISTANCE_MAX - DISTANCE_MIN);
+            left.setSpeed((int) (MIN_SPEED + (MAX_SPEED - MIN_SPEED) * (1 - coef)));
+            right.setSpeed((int) (MIN_SPEED + (MAX_SPEED - MIN_SPEED) * (coef)));
+        }
+    }
+
+    private void oldPanic() {
         Sound.beepSequenceUp();
         Button.waitForAnyPress();
         Delay.msDelay(500);
@@ -339,25 +384,25 @@ public class RobotController implements Controller {
 
     @Override
     public void onStart() { //Nastavení, start
-        System.out.println("Sym: " + exp.getSymmetry());
-        while (Button.readButtons() != Button.ENTER.getId()) {
-            if (Button.readButtons() == Button.RIGHT.getId()) {
-                exp.setSymmetry(!exp.getSymmetry());
-                LCD.clear();
-                System.out.println("Sym: " + exp.getSymmetry());
-                Delay.msDelay(1000);
-            }
-            Delay.msDelay(100);
-        }
         exp.setY(exp.getY() + 1); //jinak si mysli, ze je vys
         move(3);
     }
 
     @Override
     public void onFinish() {
-        panic();
         exp.print();
-        Delay.msDelay(1000);
-        Button.waitForAnyPress();
+        panic();
+    }
+
+    private void goUntilWall() {
+        left.setSpeed(MAX_SPEED);
+        right.setSpeed(MAX_SPEED);
+        left.backward();
+        right.backward();
+        while (!touchR.isPressed()) {
+            Delay.msDelay(20);
+        }
+        left.flt();
+        right.flt();
     }
 }

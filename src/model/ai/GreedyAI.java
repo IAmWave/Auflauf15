@@ -27,7 +27,6 @@ public class GreedyAI extends AI {
                 double interest = exp.getInterest(x, y); //vyssi = lepsi
                 if (interest != 0) {
                     interest = simpleMatrix[x][y] / interest; //nyni mensi = lepsi
-                    System.out.println(x + ", " + y + ": " + interest);
                     if (interest <= closest) {
                         if (interest < closest || (exp.getPreferLeft() == (x < bx))) {
                             closest = interest;
