@@ -2,7 +2,6 @@ package controller;
 
 import java.util.ArrayList;
 import lejos.nxt.Button;
-import lejos.nxt.LCD;
 import lejos.nxt.LightSensor;
 import lejos.nxt.Motor;
 import lejos.nxt.NXTRegulatedMotor;
@@ -39,6 +38,7 @@ public class RobotController implements Controller {
     final int DEG_TURN_180 = 366;
     final int ACCELERATION = 25;
     final int DECCELERATION_TIME = 30; //70
+    final int TURN_ACCELERATION = 40;
     final int FROM_WALL = 70;
     final int FROM_WALL_SPEED = 100;
     final int SLOW_DOWN_AT = 200;
@@ -56,16 +56,18 @@ public class RobotController implements Controller {
     final int MAGNET_ANGLE = 90;
     //PANIC MODE
     final int PANIC_TIME = 250; //za jak dlouho zacne panikarit
-    final int PANIC_SPEED = 600;
+    final int PANIC_MIN_SPEED = 200;
+    final int PANIC_MAX_SPEED = 750;
     final int PANIC_ROTATION = 60;
     final int PANIC_FROM_WALL = 30;
     final int PANIC_TIME_DELTA = 150;
     final int PANIC_UNSTUCK_TIME = 3000; //jak dlouho se musi tocit na miste
+    final int PANIC_TO_WALL_SPEED = 600;
     //DEBUG
     final boolean DEBUG_PAUSE = false;
 
-    final int DISTANCE_MIN = 4;
-    final int DISTANCE_MAX = 10;
+    final int DISTANCE_MIN = 5; //4
+    final int DISTANCE_MAX = 11; //10
 
     Exploration exp;
     GoogleSorter sorter = new GoogleSorter();
@@ -110,9 +112,7 @@ public class RobotController implements Controller {
         /*for (int i = 0; i < 10; i++) {
          turn(2);
          }
-         System.exit(0);*/ {
-
-        }
+         System.exit(0);*/
     }
 
     @Override
@@ -249,15 +249,15 @@ public class RobotController implements Controller {
         while (left.isMoving()) {
             //System.out.println(left.getSpeed());
             if (accelerate && left.getSpeed() < this.MAX_TURNING_SPEED) {
-                right.setSpeed(left.getSpeed() + ACCELERATION);
-                left.setSpeed(left.getSpeed() + ACCELERATION);
+                right.setSpeed(left.getSpeed() + TURN_ACCELERATION);
+                left.setSpeed(left.getSpeed() + TURN_ACCELERATION);
                 if (left.getSpeed() >= MAX_TURNING_SPEED) {
                     accelerate = false;
                     //System.out.println("ACCELERATED AT " + Math.abs(left.getTachoCount() - targetDeg));
                 }
             } else if (Math.abs(left.getTachoCount() - targetDeg) < DECCELERATION_TIME && left.getSpeed() > MIN_SPEED) {
-                right.setSpeed(left.getSpeed() - ACCELERATION);
-                left.setSpeed(left.getSpeed() - ACCELERATION);
+                right.setSpeed(left.getSpeed() - TURN_ACCELERATION);
+                left.setSpeed(left.getSpeed() - TURN_ACCELERATION);
 
             }
             Delay.msDelay(20);
@@ -300,14 +300,14 @@ public class RobotController implements Controller {
                 left.rotate(PANIC_FROM_WALL, true);
                 right.rotate(PANIC_FROM_WALL, false);
                 turn(-1);
-                right.setSpeed(MAX_SPEED);
+                right.setSpeed(PANIC_MAX_SPEED);
                 left.backward();
                 right.backward();
             }
             int read = Math.min(DISTANCE_MAX, Math.max(DISTANCE_MIN, raw));
             double coef = ((double) read - DISTANCE_MIN) / ((double) DISTANCE_MAX - DISTANCE_MIN);
-            left.setSpeed((int) (MIN_SPEED + (MAX_SPEED - MIN_SPEED) * (1 - coef)));
-            right.setSpeed((int) (MIN_SPEED + (MAX_SPEED - MIN_SPEED) * (coef)));
+            left.setSpeed((int) (PANIC_MIN_SPEED + (PANIC_MAX_SPEED - PANIC_MIN_SPEED) * (1 - coef)));
+            right.setSpeed((int) (PANIC_MIN_SPEED + (PANIC_MAX_SPEED - PANIC_MIN_SPEED) * (coef)));
         }
     }
 
@@ -318,8 +318,8 @@ public class RobotController implements Controller {
         boolean startAgain = true;
         while (Button.readButtons() == 0) {
             if (startAgain) {
-                left.setSpeed(PANIC_SPEED);
-                right.setSpeed(PANIC_SPEED);
+                left.setSpeed(MAX_SPEED);
+                right.setSpeed(MAX_SPEED);
                 left.backward();
                 right.backward();
                 startAgain = false;
@@ -395,11 +395,11 @@ public class RobotController implements Controller {
     }
 
     private void goUntilWall() {
-        left.setSpeed(MAX_SPEED);
-        right.setSpeed(MAX_SPEED);
+        left.setSpeed(PANIC_TO_WALL_SPEED);
+        right.setSpeed(PANIC_TO_WALL_SPEED);
         left.backward();
         right.backward();
-        while (!touchR.isPressed()) {
+        while (!touchL.isPressed() && !touchR.isPressed()) {
             Delay.msDelay(20);
         }
         left.flt();

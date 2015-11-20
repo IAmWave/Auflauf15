@@ -9,7 +9,7 @@ import model.ai.GreedyAI;
  */
 public class Exploration {
 
-    public static final double MOVE_COST = 1.4;
+    public static final double MOVE_COST = 1.3;
     //vyssi = duveryhodnejsi
     public static final double[] SCAN_FREE_COEF = {1, 0.9, 0.8};
     public static final double[] SCAN_WALL_COEF = {1, 0, 0};

@@ -48,7 +48,7 @@ public class Main {
             e.setSymmetry(sym);
         }
         Controller c = ROBOT ? (new RobotController(e, panic, fromStart))
-                : (new EmulatedController(e, "data/maps/22.map"));
+                : (new EmulatedController(e, "data/maps/s10.map"));
         go(e, c);
     }
 
