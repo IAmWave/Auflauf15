@@ -53,27 +53,36 @@ public class RobotController implements Controller {
     final int SCAN_VALUE_TILE = 17;
     //LIGHT
     final int LIGHT_RED = 30; //soutez: >30, trenink: <47
-    final int MAGNET_ANGLE = 90;
+    final int MAGNET_ANGLE = 40;
     //PANIC MODE
     final int PANIC_TIME = 250; //za jak dlouho zacne panikarit
-    final int PANIC_MIN_SPEED = 200;
-    final int PANIC_MAX_SPEED = 750;
+    final int PANIC_MIN_SPEED = 150; //200
+    final int PANIC_MAX_SPEED = 600; //750
     final int PANIC_ROTATION = 60;
     final int PANIC_FROM_WALL = 30;
     final int PANIC_TIME_DELTA = 150;
     final int PANIC_UNSTUCK_TIME = 3000; //jak dlouho se musi tocit na miste
     final int PANIC_TO_WALL_SPEED = 600;
-    //DEBUG
+    final int PANIC_AVG_SPEED = (PANIC_MIN_SPEED + PANIC_MAX_SPEED) / 2; //DEBUG
     final boolean DEBUG_PAUSE = false;
 
     final int DISTANCE_MIN = 5; //4
     final int DISTANCE_MAX = 11; //10
 
+    final int CORNER_DETECTION_DIST = 25;
+    final int CORNER_ANGLE_INIT = 100;
+    final int CORNER_ANGLE_TURN = 240;
+    final int CORNER_ANGLE_AFTER = 200;
+
     Exploration exp;
     GoogleSorter sorter = new GoogleSorter();
 
     public RobotController(Exploration exp, boolean panic, boolean fromStart) {
-        magnet.setSpeed(magnet.getMaxSpeed());
+        magnet.setSpeed(magnet.getMaxSpeed() / 2);
+        /*while (Button.readButtons() != Button.ESCAPE.getId()) {
+         magnet.rotate(-MAGNET_ANGLE);
+         magnet.rotate(MAGNET_ANGLE);
+         }*/
         light.setFloodlight(false);
         /*while (!touchL.isPressed()) {
          System.out.println(light.readValue());
@@ -82,11 +91,14 @@ public class RobotController implements Controller {
         //RConsole.openUSB(2000);
         Thread magnetThread = new Thread() {
             public void run() {
+                magnet.rotate(-MAGNET_ANGLE);
+                magnet.stop();
                 while (Button.readButtons() != Button.ESCAPE.getId()) {
                     if (light.readValue() > LIGHT_RED && !magnet.isMoving()) {
-                        magnet.rotateTo(MAGNET_ANGLE, true);
+                        magnet.rotate(MAGNET_ANGLE, true);
                         magnet.waitComplete();
-                        magnet.rotate(-MAGNET_ANGLE, true);
+                        magnet.rotate(-MAGNET_ANGLE, false);
+                        magnet.stop();
                     }
                     Delay.msDelay(50);
                 }
@@ -264,7 +276,9 @@ public class RobotController implements Controller {
         }
         left.flt(true);
         right.flt(true);
-        if (DEBUG_PAUSE) Button.waitForAnyPress();
+        if (DEBUG_PAUSE) {
+            Button.waitForAnyPress();
+        }
     }
 
     private boolean isBumpable(int x, int y, Direction dir) {
@@ -279,23 +293,56 @@ public class RobotController implements Controller {
         return true;
     }
 
+    private void delayAngle(int angle, NXTRegulatedMotor mot) {
+        int beginAngle = mot.getTachoCount();
+        int curAngle = beginAngle;
+        while (Math.abs(mot.getTachoCount() - beginAngle) < angle && Button.readButtons() != Button.ESCAPE.getId()) {
+            Delay.msDelay(10);
+        }
+    }
+
     private void panic() {
         left.backward();
         right.backward();
         long overTime = -1;
+        int last = 10;
+        int raw = 0;
         while (Button.readButtons() != Button.ESCAPE.getId()) {
             boolean doRotate = false;
-            int raw = sonic.getDistance();
+            last = raw;
+            raw = sonic.getDistance();
+
+            if (raw > CORNER_DETECTION_DIST && last > CORNER_DETECTION_DIST) {
+                Sound.beep();
+                left.setSpeed(PANIC_AVG_SPEED);
+                right.setSpeed(PANIC_AVG_SPEED);
+                delayAngle(CORNER_ANGLE_INIT, right);
+                left.setSpeed(PANIC_MIN_SPEED);
+                right.setSpeed(PANIC_MAX_SPEED);
+                left.forward();
+                delayAngle(CORNER_ANGLE_TURN, right);
+                left.backward();
+                left.setSpeed(PANIC_AVG_SPEED);
+                right.setSpeed(PANIC_AVG_SPEED);
+                delayAngle(CORNER_ANGLE_AFTER, right);
+                Sound.beep();
+                last = raw;
+                raw = sonic.getDistance();
+            }
+
             if (raw > DISTANCE_MAX) {
-                if (overTime == -1) overTime = System.currentTimeMillis();
-                else {
+                if (overTime == -1) {
+                    overTime = System.currentTimeMillis();
+                } else {
                     if (System.currentTimeMillis() - overTime > PANIC_UNSTUCK_TIME) {
                         overTime = -1;
                         goUntilWall();
                         doRotate = true;
                     }
                 }
-            } else overTime = -1;
+            } else {
+                overTime = -1;
+            }
             if (touchR.isPressed() || doRotate) {
                 left.rotate(PANIC_FROM_WALL, true);
                 right.rotate(PANIC_FROM_WALL, false);
