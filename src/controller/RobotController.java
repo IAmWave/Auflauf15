@@ -54,41 +54,15 @@ public class RobotController implements Controller {
     //LIGHT
     final int LIGHT_RED = 30; //soutez: >30, trenink: <47
     final int MAGNET_ANGLE = 40;
-    //PANIC MODE
+    //PANIC
     final int PANIC_TIME = 250; //za jak dlouho zacne panikarit
-    final int PANIC_MIN_SPEED = 150; //200
-    final int PANIC_MAX_SPEED = 600; //750
-    final int PANIC_ROTATION = 60;
-    final int PANIC_FROM_WALL = 30;
-    final int PANIC_TIME_DELTA = 150;
-    final int PANIC_UNSTUCK_TIME = 3000; //jak dlouho se musi tocit na miste
-    final int PANIC_TO_WALL_SPEED = 600;
-    final int PANIC_AVG_SPEED = (PANIC_MIN_SPEED + PANIC_MAX_SPEED) / 2; //DEBUG
-    final boolean DEBUG_PAUSE = false;
-
-    final int DISTANCE_MIN = 5; //4
-    final int DISTANCE_MAX = 11; //10
-
-    final int CORNER_DETECTION_DIST = 25;
-    final int CORNER_ANGLE_INIT = 100;
-    final int CORNER_ANGLE_TURN = 240;
-    final int CORNER_ANGLE_AFTER = 200;
 
     Exploration exp;
     GoogleSorter sorter = new GoogleSorter();
 
     public RobotController(Exploration exp, boolean panic, boolean fromStart) {
         magnet.setSpeed(magnet.getMaxSpeed() / 2);
-        /*while (Button.readButtons() != Button.ESCAPE.getId()) {
-         magnet.rotate(-MAGNET_ANGLE);
-         magnet.rotate(MAGNET_ANGLE);
-         }*/
         light.setFloodlight(false);
-        /*while (!touchL.isPressed()) {
-         System.out.println(light.readValue());
-         }
-         System.exit(0);*/
-        //RConsole.openUSB(2000);
         Thread magnetThread = new Thread() {
             public void run() {
                 magnet.rotate(-MAGNET_ANGLE);
@@ -106,25 +80,16 @@ public class RobotController implements Controller {
         };
         magnetThread.start();
 
-        /*while (!touchL.isPressed()) {
-         RConsole.println(sonic.getDistance() + "");
-         }
-         System.exit(0);*/
         this.exp = exp;
         exp.print();
         if (panic) {
+            PanicController pc = new PanicController(this);
             if (fromStart) {
-                goUntilWall();
+                pc.goUntilWall();
             }
-            panic();
+            pc.panic();
             System.exit(0);
         }
-
-        //KALIBROVACI CYKLUS
-        /*for (int i = 0; i < 10; i++) {
-         turn(2);
-         }
-         System.exit(0);*/
     }
 
     @Override
@@ -133,20 +98,17 @@ public class RobotController implements Controller {
         for (int i = 0; i < tileData.length; i++) {
             tileData[i] = new ArrayList<>();
         }
-
         int x = exp.getX();
         int y = exp.getY();
-
         boolean fromWall = false;
-        if (isBumpable(x, y, exp.getDirection().turnLeft().turnLeft())) {
+        /*if (isBumpable(x, y, exp.getDirection().turnLeft().turnLeft())) {
             //COUVANI PRED JIZDOU
             left.setSpeed(BACKWARDS_TO_WALL_SPEED);
             right.setSpeed(BACKWARDS_TO_WALL_SPEED);
             left.rotate(BACKWARDS_TO_WALL, true);
             right.rotate(BACKWARDS_TO_WALL);
-            //Button.waitForAnyPress();
             fromWall = true;
-        }
+        }*/
         boolean bump = false;
         int SLOW_DOWN = SLOW_DOWN_AT;
         if (isBumpable(x + tiles * exp.getDirection().deltaX(),
@@ -154,7 +116,7 @@ public class RobotController implements Controller {
             bump = true;
             SLOW_DOWN -= TO_WALL;
         }
-        //PRICTENI DEG POKUD JE U ZDI
+        //pokud je u zdi, musi jet dal
         left.rotate(-DEG_TILE * tiles - (fromWall ? FROM_WALL : 0) - (bump ? TO_WALL : 0), true);
         right.rotate(-DEG_TILE * tiles - (fromWall ? FROM_WALL : 0) - (bump ? TO_WALL : 0), true);
         int deg = left.getTachoCount();
@@ -176,13 +138,12 @@ public class RobotController implements Controller {
                 Button.waitForAnyPress();
                 System.exit(0);
             }
-
             if ((touchL.isPressed() || touchR.isPressed()) && singlePress == -1) {
                 singlePress = System.currentTimeMillis();
             }
-
             if (singlePress != -1 && System.currentTimeMillis() - singlePress > PANIC_TIME) {
-                panic();
+                //zrejme je nakrivo
+                new PanicController(this).panic();
             }
             if (read) {
                 int dist = sonic.getDistance();
@@ -200,8 +161,6 @@ public class RobotController implements Controller {
                         break;
                     }
                 }
-                //debugovaci vypis
-                RConsole.println((tile == -1 ? "NONE" : ("" + tile)) + "\t" + sDeg + "\t" + dist);
                 if (tile != -1) {
                     tileData[tile].add(dist);
                 }
@@ -222,7 +181,7 @@ public class RobotController implements Controller {
         left.flt(true);
         right.flt(true);
         if (!Exploration.inBounds(x, y)) {
-            panic(); //Something, somewhere has gone horribly wrong.
+            new PanicController(this).panic(); //Something, somewhere has gone horribly wrong.
         }
 
         int tilesFinished = Math.abs((int) Math.round((left.getTachoCount() - deg + 0.0) / DEG_TILE));
@@ -259,13 +218,11 @@ public class RobotController implements Controller {
         left.setSpeed(40);
         right.setSpeed(40);
         while (left.isMoving()) {
-            //System.out.println(left.getSpeed());
             if (accelerate && left.getSpeed() < this.MAX_TURNING_SPEED) {
                 right.setSpeed(left.getSpeed() + TURN_ACCELERATION);
                 left.setSpeed(left.getSpeed() + TURN_ACCELERATION);
                 if (left.getSpeed() >= MAX_TURNING_SPEED) {
                     accelerate = false;
-                    //System.out.println("ACCELERATED AT " + Math.abs(left.getTachoCount() - targetDeg));
                 }
             } else if (Math.abs(left.getTachoCount() - targetDeg) < DECCELERATION_TIME && left.getSpeed() > MIN_SPEED) {
                 right.setSpeed(left.getSpeed() - TURN_ACCELERATION);
@@ -276,9 +233,6 @@ public class RobotController implements Controller {
         }
         left.flt(true);
         right.flt(true);
-        if (DEBUG_PAUSE) {
-            Button.waitForAnyPress();
-        }
     }
 
     private boolean isBumpable(int x, int y, Direction dir) {
@@ -293,111 +247,9 @@ public class RobotController implements Controller {
         return true;
     }
 
-    private void delayAngle(int angle, NXTRegulatedMotor mot) {
-        int beginAngle = mot.getTachoCount();
-        int curAngle = beginAngle;
-        while (Math.abs(mot.getTachoCount() - beginAngle) < angle && Button.readButtons() != Button.ESCAPE.getId()) {
-            Delay.msDelay(10);
-        }
-    }
-
-    private void panic() {
-        left.backward();
-        right.backward();
-        long overTime = -1;
-        int last = 10;
-        int raw = 0;
-        while (Button.readButtons() != Button.ESCAPE.getId()) {
-            boolean doRotate = false;
-            last = raw;
-            raw = sonic.getDistance();
-
-            if (raw > CORNER_DETECTION_DIST && last > CORNER_DETECTION_DIST) {
-                Sound.beep();
-                left.setSpeed(PANIC_AVG_SPEED);
-                right.setSpeed(PANIC_AVG_SPEED);
-                delayAngle(CORNER_ANGLE_INIT, right);
-                left.setSpeed(PANIC_MIN_SPEED);
-                right.setSpeed(PANIC_MAX_SPEED);
-                left.forward();
-                delayAngle(CORNER_ANGLE_TURN, right);
-                left.backward();
-                left.setSpeed(PANIC_AVG_SPEED);
-                right.setSpeed(PANIC_AVG_SPEED);
-                delayAngle(CORNER_ANGLE_AFTER, right);
-                Sound.beep();
-                last = raw;
-                raw = sonic.getDistance();
-            }
-
-            if (raw > DISTANCE_MAX) {
-                if (overTime == -1) {
-                    overTime = System.currentTimeMillis();
-                } else {
-                    if (System.currentTimeMillis() - overTime > PANIC_UNSTUCK_TIME) {
-                        overTime = -1;
-                        goUntilWall();
-                        doRotate = true;
-                    }
-                }
-            } else {
-                overTime = -1;
-            }
-            if (touchR.isPressed() || doRotate) {
-                left.rotate(PANIC_FROM_WALL, true);
-                right.rotate(PANIC_FROM_WALL, false);
-                turn(-1);
-                right.setSpeed(PANIC_MAX_SPEED);
-                left.backward();
-                right.backward();
-            }
-            int read = Math.min(DISTANCE_MAX, Math.max(DISTANCE_MIN, raw));
-            double coef = ((double) read - DISTANCE_MIN) / ((double) DISTANCE_MAX - DISTANCE_MIN);
-            left.setSpeed((int) (PANIC_MIN_SPEED + (PANIC_MAX_SPEED - PANIC_MIN_SPEED) * (1 - coef)));
-            right.setSpeed((int) (PANIC_MIN_SPEED + (PANIC_MAX_SPEED - PANIC_MIN_SPEED) * (coef)));
-        }
-    }
-
-    private void oldPanic() {
-        Sound.beepSequenceUp();
-        Button.waitForAnyPress();
-        Delay.msDelay(500);
-        boolean startAgain = true;
-        while (Button.readButtons() == 0) {
-            if (startAgain) {
-                left.setSpeed(MAX_SPEED);
-                right.setSpeed(MAX_SPEED);
-                left.backward();
-                right.backward();
-                startAgain = false;
-            }
-
-            /*if (touchL.isPressed() && touchR.isPressed()) {
-             //otocit o 90
-             pullBack();
-             left.rotate(DEG_TURN_90, true);
-             right.rotate(-DEG_TURN_90, false);
-             startAgain = true;
-             }*/
-            if (touchL.isPressed() || touchR.isPressed()) {
-                int coef = touchL.isPressed() ? (1) : (-1); //NEPRESOUVAT PLS
-                left.flt(true);
-                right.flt(true);
-                Delay.msDelay(100);
-                left.rotate(PANIC_FROM_WALL, true);
-                right.rotate(PANIC_FROM_WALL, false);
-                left.rotate(PANIC_ROTATION * coef, true);
-                right.rotate(-PANIC_ROTATION * coef, false);
-                startAgain = true;
-            }
-            Delay.msDelay(25);
-        }
-        System.exit(0);
-    }
 
     private void handleMove(ArrayList<Integer>[] tileData, int tilesFinished, int x, int y) {
         for (int i = 0; i <= tilesFinished; i++) {
-            //RConsole.println(x + " " + y + ": ");
             if (tileData[i].size() > 0) {
                 Integer[] ints = tileData[i].toArray(new Integer[tileData[i].size()]);
                 int[] ar = new int[ints.length];
@@ -410,9 +262,6 @@ public class RobotController implements Controller {
                 RConsole.println("Handling: " + x + ", " + y
                         + " " + exp.getDirection().turnRight() + " " + medianTiles);
                 exp.handleScan(x, y, exp.getDirection().turnRight(), medianTiles);
-                //RConsole.println("" + ar[ar.length / 2]);
-            } else {
-                //RConsole.println("NO DATA MEASURED");
             }
             if (i < tilesFinished) {
                 x += exp.getDirection().deltaX();
@@ -438,18 +287,6 @@ public class RobotController implements Controller {
     @Override
     public void onFinish() {
         exp.print();
-        panic();
-    }
-
-    private void goUntilWall() {
-        left.setSpeed(PANIC_TO_WALL_SPEED);
-        right.setSpeed(PANIC_TO_WALL_SPEED);
-        left.backward();
-        right.backward();
-        while (!touchL.isPressed() && !touchR.isPressed()) {
-            Delay.msDelay(20);
-        }
-        left.flt();
-        right.flt();
+        new PanicController(this).panic();
     }
 }
