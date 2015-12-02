@@ -1,5 +1,6 @@
 package model.ai;
 
+import model.Direction;
 import model.Exploration;
 import model.Map;
 import model.Move;
@@ -20,7 +21,7 @@ public class GreedyAI extends AI {
     public Move decide() {
         updateCostMatrix();
         double closest = INF;
-        int bx = 0, by = 0;
+        int bx = -1, by = -1;
         for (int x = 0; x < Map.WIDTH; x++) {
             for (int y = 0; y < Map.HEIGHT; y++) {
                 if (simpleMatrix[x][y] == INF) continue;
@@ -37,6 +38,7 @@ public class GreedyAI extends AI {
                 }
             }
         }
+        if (bx == -1 && by == -1) return new Move(Direction.UP, 0);
         Move res = moveTowards(bx, by);
         if (exp.getX() + res.dir.deltaX() * res.tiles == bx
                 && exp.getY() + res.dir.deltaY() * res.tiles == by) {
