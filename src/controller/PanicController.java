@@ -23,9 +23,9 @@ public class PanicController {
     final int DISTANCE_MAX = 11; //10
 
     final int CORNER_DETECTION_DIST = 25;
-    final int CORNER_ANGLE_INIT = 100;
+    final int CORNER_ANGLE_INIT = 150;
     final int CORNER_ANGLE_TURN = 240;
-    final int CORNER_ANGLE_AFTER = 200;
+    final int CORNER_ANGLE_AFTER = 100;
 
     RobotController c;
     NXTRegulatedMotor left, right;
@@ -39,7 +39,6 @@ public class PanicController {
 
     private void delayAngle(int angle, NXTRegulatedMotor mot) {
         int beginAngle = mot.getTachoCount();
-        int curAngle = beginAngle;
         while (Math.abs(mot.getTachoCount() - beginAngle) < angle && Button.readButtons() != Button.ESCAPE.getId()) {
             Delay.msDelay(10);
         }
@@ -69,6 +68,12 @@ public class PanicController {
                 left.setSpeed(PANIC_AVG_SPEED);
                 right.setSpeed(PANIC_AVG_SPEED);
                 delayAngle(CORNER_ANGLE_AFTER, right);
+                Sound.beep();
+                left.setSpeed(PANIC_MIN_SPEED);
+                right.setSpeed(PANIC_AVG_SPEED);
+                while(c.sonic.getDistance() > CORNER_DETECTION_DIST){
+                    Delay.msDelay(20);
+                }
                 Sound.beep();
                 last = raw;
                 raw = c.sonic.getDistance();
