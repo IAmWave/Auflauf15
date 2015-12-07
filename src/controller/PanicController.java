@@ -26,7 +26,8 @@ public class PanicController {
     final int CORNER_ANGLE_INIT = 150;
     final int CORNER_ANGLE_TURN = 240;
     final int CORNER_ANGLE_AFTER = 100;
-
+    final boolean CORNER = true;
+    
     RobotController c;
     NXTRegulatedMotor left, right;
 
@@ -55,7 +56,7 @@ public class PanicController {
             last = raw;
             raw = c.sonic.getDistance();
 
-            if (raw > CORNER_DETECTION_DIST && last > CORNER_DETECTION_DIST) {
+            if (raw > CORNER_DETECTION_DIST && last > CORNER_DETECTION_DIST && CORNER) {
                 Sound.beep();
                 left.setSpeed(PANIC_AVG_SPEED);
                 right.setSpeed(PANIC_AVG_SPEED);
