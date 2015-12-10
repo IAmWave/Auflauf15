@@ -10,24 +10,20 @@ import lejos.util.Delay;
  * @author Václav
  */
 public class PanicController {
-    final int PANIC_MIN_SPEED = 150; //200
-    final int PANIC_MAX_SPEED = 600; //750
-    final int PANIC_ROTATION = 60;
-    final int PANIC_FROM_WALL = 30;
-    final int PANIC_TIME_DELTA = 150;
+
+    final int PANIC_FROM_WALL = 45;
     final int PANIC_UNSTUCK_TIME = 3000; //jak dlouho se musi tocit na miste
     final int PANIC_TO_WALL_SPEED = 600;
-    final int PANIC_AVG_SPEED = (PANIC_MIN_SPEED + PANIC_MAX_SPEED) / 2; //DEBUG
 
     final int DISTANCE_MIN = 5; //4
     final int DISTANCE_MAX = 11; //10
 
-    final int CORNER_DETECTION_DIST = 25;
-    final int CORNER_ANGLE_INIT = 150;
-    final int CORNER_ANGLE_TURN = 240;
-    final int CORNER_ANGLE_AFTER = 100;
-    final boolean CORNER = true;
-    
+    final int SPEED = 350;
+    final int DELTA_MAX = 250; //300
+    final double ACCEL = 100; //350
+    final double FLAT_DECREASE = 30;
+    double delta = 0;
+
     RobotController c;
     NXTRegulatedMotor left, right;
 
@@ -36,13 +32,6 @@ public class PanicController {
         left = c.left;
         right = c.right;
         panic();
-    }
-
-    private void delayAngle(int angle, NXTRegulatedMotor mot) {
-        int beginAngle = mot.getTachoCount();
-        while (Math.abs(mot.getTachoCount() - beginAngle) < angle && Button.readButtons() != Button.ESCAPE.getId()) {
-            Delay.msDelay(10);
-        }
     }
 
     public void panic() {
@@ -55,30 +44,6 @@ public class PanicController {
             boolean doRotate = false;
             last = raw;
             raw = c.sonic.getDistance();
-
-            if (raw > CORNER_DETECTION_DIST && last > CORNER_DETECTION_DIST && CORNER) {
-                Sound.beep();
-                left.setSpeed(PANIC_AVG_SPEED);
-                right.setSpeed(PANIC_AVG_SPEED);
-                delayAngle(CORNER_ANGLE_INIT, right);
-                left.setSpeed(PANIC_MIN_SPEED);
-                right.setSpeed(PANIC_MAX_SPEED);
-                left.forward();
-                delayAngle(CORNER_ANGLE_TURN, right);
-                left.backward();
-                left.setSpeed(PANIC_AVG_SPEED);
-                right.setSpeed(PANIC_AVG_SPEED);
-                delayAngle(CORNER_ANGLE_AFTER, right);
-                Sound.beep();
-                left.setSpeed(PANIC_MIN_SPEED);
-                right.setSpeed(PANIC_AVG_SPEED);
-                while(c.sonic.getDistance() > CORNER_DETECTION_DIST){
-                    Delay.msDelay(20);
-                }
-                Sound.beep();
-                last = raw;
-                raw = c.sonic.getDistance();
-            }
 
             if (raw > DISTANCE_MAX) {
                 if (overTime == -1) {
@@ -97,14 +62,23 @@ public class PanicController {
                 left.rotate(PANIC_FROM_WALL, true);
                 right.rotate(PANIC_FROM_WALL, false);
                 c.turn(-1);
-                right.setSpeed(PANIC_MAX_SPEED);
+                right.setSpeed(SPEED);
                 left.backward();
                 right.backward();
+                delta = 0;
             }
             int read = Math.min(DISTANCE_MAX, Math.max(DISTANCE_MIN, raw));
             double coef = ((double) read - DISTANCE_MIN) / ((double) DISTANCE_MAX - DISTANCE_MIN);
-            left.setSpeed((int) (PANIC_MIN_SPEED + (PANIC_MAX_SPEED - PANIC_MIN_SPEED) * (1 - coef)));
-            right.setSpeed((int) (PANIC_MIN_SPEED + (PANIC_MAX_SPEED - PANIC_MIN_SPEED) * (coef)));
+            coef = Math.sqrt(coef);
+            if (delta < 0) delta = Math.min(0, delta + FLAT_DECREASE);
+            if (delta > 0) delta = Math.max(0, delta - FLAT_DECREASE);
+            delta = delta + ACCEL * (coef - 0.5);
+            //delta = delta * KEPT + (1 - KEPT) * ACCEL * (coef - 0.5);
+
+            if (Math.abs(delta) > DELTA_MAX) Sound.playTone(2000, 100);
+            delta = Math.min(DELTA_MAX, Math.max(-DELTA_MAX, delta));
+            left.setSpeed(SPEED - (int) delta);
+            right.setSpeed(SPEED + (int) delta);
         }
     }
 
