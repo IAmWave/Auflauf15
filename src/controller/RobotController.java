@@ -56,11 +56,13 @@ public class RobotController implements Controller {
     final int MAGNET_ANGLE = 40;
     //PANIC
     final int PANIC_TIME = 250; //za jak dlouho zacne panikarit
+    final boolean BUMP;
 
     Exploration exp;
     GoogleSorter sorter = new GoogleSorter();
 
-    public RobotController(Exploration exp, boolean panic, boolean fromStart) {
+    public RobotController(Exploration exp, boolean panic, boolean fromStart, boolean bump) {
+        this.BUMP = bump;
         magnet.setSpeed(magnet.getMaxSpeed() / 2);
         light.setFloodlight(false);
         Thread magnetThread = new Thread() {
@@ -101,14 +103,14 @@ public class RobotController implements Controller {
         int x = exp.getX();
         int y = exp.getY();
         boolean fromWall = false;
-        /*if (isBumpable(x, y, exp.getDirection().turnLeft().turnLeft())) {
+        if (isBumpable(x, y, exp.getDirection().turnLeft().turnLeft()) && BUMP) {
             //COUVANI PRED JIZDOU
             left.setSpeed(BACKWARDS_TO_WALL_SPEED);
             right.setSpeed(BACKWARDS_TO_WALL_SPEED);
             left.rotate(BACKWARDS_TO_WALL, true);
             right.rotate(BACKWARDS_TO_WALL);
             fromWall = true;
-        }*/
+        }
         boolean bump = false;
         int SLOW_DOWN = SLOW_DOWN_AT;
         if (isBumpable(x + tiles * exp.getDirection().deltaX(),
@@ -246,7 +248,6 @@ public class RobotController implements Controller {
         }
         return true;
     }
-
 
     private void handleMove(ArrayList<Integer>[] tileData, int tilesFinished, int x, int y) {
         for (int i = 0; i <= tilesFinished; i++) {

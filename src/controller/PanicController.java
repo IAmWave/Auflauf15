@@ -11,17 +11,19 @@ import lejos.util.Delay;
  */
 public class PanicController {
 
-    final int PANIC_FROM_WALL = 45;
+    final int PANIC_FROM_WALL = 40;
     final int PANIC_UNSTUCK_TIME = 3000; //jak dlouho se musi tocit na miste
     final int PANIC_TO_WALL_SPEED = 600;
 
     final int DISTANCE_MIN = 5; //4
     final int DISTANCE_MAX = 11; //10
+    
+    final int FROM_WALL_SPEED = 350;
+    final int SPEED = 450; //450
+    final int DELTA_MAX = 260; //280
+    final double FLAT_DECREASE = 65; //65
+    final double ACCEL = FLAT_DECREASE + 105; //105
 
-    final int SPEED = 350;
-    final int DELTA_MAX = 250; //300
-    final double ACCEL = 100; //350
-    final double FLAT_DECREASE = 30;
     double delta = 0;
 
     RobotController c;
@@ -34,6 +36,12 @@ public class PanicController {
         panic();
     }
 
+    public static double interpolate(double x){
+        x-= 0.5;
+        int sign = x>0?1:(x<0?-1:0);
+        return Math.sqrt(Math.abs(x))/Math.sqrt(2)*sign;
+    }
+    
     public void panic() {
         left.backward();
         right.backward();
@@ -59,6 +67,8 @@ public class PanicController {
                 overTime = -1;
             }
             if (c.touchR.isPressed() || doRotate) {
+                left.setSpeed(FROM_WALL_SPEED);
+                right.setSpeed(FROM_WALL_SPEED);
                 left.rotate(PANIC_FROM_WALL, true);
                 right.rotate(PANIC_FROM_WALL, false);
                 c.turn(-1);
@@ -69,13 +79,19 @@ public class PanicController {
             }
             int read = Math.min(DISTANCE_MAX, Math.max(DISTANCE_MIN, raw));
             double coef = ((double) read - DISTANCE_MIN) / ((double) DISTANCE_MAX - DISTANCE_MIN);
-            coef = Math.sqrt(coef);
-            if (delta < 0) delta = Math.min(0, delta + FLAT_DECREASE);
-            if (delta > 0) delta = Math.max(0, delta - FLAT_DECREASE);
-            delta = delta + ACCEL * (coef - 0.5);
+            coef = interpolate(coef);
+            if (delta < 0) {
+                delta = Math.min(0, delta + FLAT_DECREASE);
+            }
+            if (delta > 0) {
+                delta = Math.max(0, delta - FLAT_DECREASE);
+            }
+            delta = delta + ACCEL * coef;
             //delta = delta * KEPT + (1 - KEPT) * ACCEL * (coef - 0.5);
 
-            if (Math.abs(delta) > DELTA_MAX) Sound.playTone(2000, 100);
+            if (Math.abs(delta) > DELTA_MAX) {
+                Sound.playTone(2000, 100);
+            }
             delta = Math.min(DELTA_MAX, Math.max(-DELTA_MAX, delta));
             left.setSpeed(SPEED - (int) delta);
             right.setSpeed(SPEED + (int) delta);
