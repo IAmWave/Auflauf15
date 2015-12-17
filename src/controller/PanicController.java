@@ -11,43 +11,60 @@ import lejos.util.Delay;
  */
 public class PanicController {
 
-    final int PANIC_FROM_WALL = 40;
+    final int PANIC_FROM_WALL = 45;
     final int PANIC_UNSTUCK_TIME = 3000; //jak dlouho se musi tocit na miste
     final int PANIC_TO_WALL_SPEED = 600;
 
-    final int DISTANCE_MIN = 5; //4
+    final int DISTANCE_MIN = 4; //4
     final int DISTANCE_MAX = 11; //10
-    
+
     final int FROM_WALL_SPEED = 350;
     final int SPEED = 450; //450
-    final int DELTA_MAX = 260; //280
+    final int DELTA_MAX = 280; //280
     final double FLAT_DECREASE = 65; //65
-    final double ACCEL = FLAT_DECREASE + 105; //105
+    final double ACCEL = FLAT_DECREASE + 110; //105
+    final static double INTERPOLATION_EXP = 1; //vyzkouset
 
     double delta = 0;
+
+    long lastTurn = 0;
+    final int MIN_TURN_DELAY = 500;
 
     RobotController c;
     NXTRegulatedMotor left, right;
 
-    public PanicController(RobotController c) {
-        this.c = c;
+    int turnsDone = 0;
+    int turnsLimit = -1;
+
+    private void init() {
         left = c.left;
         right = c.right;
-        panic();
     }
 
-    public static double interpolate(double x){
-        x-= 0.5;
-        int sign = x>0?1:(x<0?-1:0);
-        return Math.sqrt(Math.abs(x))/Math.sqrt(2)*sign;
+    public PanicController(RobotController c) {
+        this.c = c;
+        init();
     }
-    
+
+    public PanicController(RobotController c, int turnsLimit) {
+        this.c = c;
+        this.turnsLimit = turnsLimit;
+        init();
+    }
+
+    public static double interpolate(double x) { //na -0.5 az 0.5
+        x = (x - 0.5) * 2;
+        int sign = x > 0 ? 1 : (x < 0 ? -1 : 0);
+        return Math.pow(Math.abs(x), INTERPOLATION_EXP) * sign / 2;
+    }
+
     public void panic() {
         left.backward();
         right.backward();
         long overTime = -1;
         int last = 10;
         int raw = 0;
+        boolean lastMax = false;
         while (Button.readButtons() != Button.ESCAPE.getId()) {
             boolean doRotate = false;
             last = raw;
@@ -60,22 +77,15 @@ public class PanicController {
                     if (System.currentTimeMillis() - overTime > PANIC_UNSTUCK_TIME) {
                         overTime = -1;
                         goUntilWall();
-                        doRotate = true;
+                        makeTurn();
                     }
                 }
             } else {
                 overTime = -1;
             }
-            if (c.touchR.isPressed() || doRotate) {
-                left.setSpeed(FROM_WALL_SPEED);
-                right.setSpeed(FROM_WALL_SPEED);
-                left.rotate(PANIC_FROM_WALL, true);
-                right.rotate(PANIC_FROM_WALL, false);
-                c.turn(-1);
-                right.setSpeed(SPEED);
-                left.backward();
-                right.backward();
-                delta = 0;
+            //naraz
+            if (c.touchL.isPressed() && c.touchR.isPressed()) {
+                makeTurn();
             }
             int read = Math.min(DISTANCE_MAX, Math.max(DISTANCE_MIN, raw));
             double coef = ((double) read - DISTANCE_MIN) / ((double) DISTANCE_MAX - DISTANCE_MIN);
@@ -90,11 +100,35 @@ public class PanicController {
             //delta = delta * KEPT + (1 - KEPT) * ACCEL * (coef - 0.5);
 
             if (Math.abs(delta) > DELTA_MAX) {
-                Sound.playTone(2000, 100);
-            }
+                if (!lastMax && lastTurn + MIN_TURN_DELAY < System.currentTimeMillis()) {
+                    Sound.playTone(2000, 100);
+                    turnsDone++;
+                    lastTurn = System.currentTimeMillis();
+                }
+                lastMax = true;
+            } else lastMax = false;
             delta = Math.min(DELTA_MAX, Math.max(-DELTA_MAX, delta));
             left.setSpeed(SPEED - (int) delta);
             right.setSpeed(SPEED + (int) delta);
+        }
+    }
+
+    private void makeTurn() {
+        left.setSpeed(FROM_WALL_SPEED);
+        right.setSpeed(FROM_WALL_SPEED);
+        left.rotate(PANIC_FROM_WALL, true);
+        right.rotate(PANIC_FROM_WALL, false);
+        c.turn(-1);
+        delta = 0;
+        turnsDone++;
+        if (turnsDone >= turnsLimit && turnsLimit >= 0) {
+            turnsDone = -10000;
+            goUntilWall();
+            makeTurn();
+        } else {
+            right.setSpeed(SPEED);
+            left.backward();
+            right.backward();
         }
     }
 

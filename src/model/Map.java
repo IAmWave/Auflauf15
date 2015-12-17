@@ -95,4 +95,44 @@ public class Map {
         return (x >= 0) && (y >= 0) && (x < WIDTH) && (y < HEIGHT)
                 && (values[x][y] != Tile.WALL);
     }
+
+    public void emulatePanic() {
+        int x = START_X;
+        int y = START_Y;
+        Direction d = Direction.UP;
+        int turns = 0;
+        do {
+            setTileAt(x, y, Tile.GOOD);
+            if (walkable(x + d.turnRight().deltaX(), y + d.turnRight().deltaY())) {
+                d = d.turnRight();
+                turns++;
+                System.out.println("TURN " + turns);
+                print(x, y, d);
+                x += d.deltaX();
+                y += d.deltaY();
+            } else if (walkable(x + d.deltaX(), y + d.deltaY())) {
+                x += d.deltaX();
+                y += d.deltaY();
+            } else {
+                d = d.turnLeft();
+                turns++;
+                System.out.println("TURN " + turns);
+                print(x, y, d);
+            }
+        } while (x != START_X || y != START_Y || d!=Direction.RIGHT);
+    }
+
+    private void print(int cx, int cy, Direction cd) {
+        for (int y = 0; y < HEIGHT; y++) {
+            for (int x = 0; x < WIDTH; x++) {
+                if (x == cx && y == cy) {
+                    System.out.print(cd.toChar());
+                } else {
+                    System.out.print(tileAt(x, y).toChar());
+                }
+            }
+            System.out.println();
+        }
+        System.out.println();
+    }
 }

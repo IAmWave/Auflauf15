@@ -25,6 +25,8 @@ public class EmulatedController implements Controller {
 
     public EmulatedController(Exploration exp, String mapPath) {
         map = new Map(new File(mapPath));
+        map.emulatePanic();
+        map = new Map(new File(mapPath));
         this.exp = exp;
         Tile[][] t = map.getTiles();
         boolean sym = true;

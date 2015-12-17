@@ -23,42 +23,68 @@ public class Main {
         Exploration e = new Exploration();
         boolean panic = false;
         boolean fromStart = false;
+        int limit = -1;
         boolean sym = false;
         boolean bump = false;
         if (ROBOT) {
-            TouchSensor touchL = new TouchSensor(SensorPort.S1);
-            LCD.drawString("< PANIC: " + panic + "   ", 0, 0);
-            LCD.drawString("> START: " + fromStart + "   ", 0, 1);
-            LCD.drawString("v SYM:   " + sym + "   ", 0, 2);
-            LCD.drawString("L BUMP:   " + bump + "   ", 0, 3);
-            Delay.msDelay(500);
-            while (Button.readButtons() != Button.ENTER.getId()) {
-                if (touchL.isPressed()) {
-                    bump = !bump;
-                } else if (Button.readButtons() == 0) {
-                    Delay.msDelay(50);
-                    continue;
-                }
-                if (Button.readButtons() == Button.RIGHT.getId()) {
-                    fromStart = !fromStart;
-                }
+            LCD.drawString("< PANIC", 0, 0);
+            LCD.drawString("> NORMAL", 0, 1);
+            while (true) {
                 if (Button.readButtons() == Button.LEFT.getId()) {
-                    panic = !panic;
+                    panic = true;
+                    break;
+                } else if (Button.readButtons() == Button.RIGHT.getId()) {
+                    panic = false;
+                    break;
                 }
-                if (Button.readButtons() == Button.ESCAPE.getId()) {
-                    sym = !sym;
+                Delay.msDelay(100);
+            }
+
+            if (panic) {
+                LCD.drawString("<> LIMIT: " + limit + "   ", 0, 0);
+                LCD.drawString("v START: " + fromStart + "   ", 0, 1);
+                Delay.msDelay(500);
+                while (Button.readButtons() != Button.ENTER.getId()) {
+                    if (Button.readButtons() == 0) {
+                        Delay.msDelay(20);
+                    }
+                    if (Button.readButtons() == Button.LEFT.getId()) {
+                        limit--;
+                        if (limit < -1) limit = -1;
+                    }
+                    if (Button.readButtons() == Button.RIGHT.getId()) {
+                        limit++;
+                    }
+                    if (Button.readButtons() == Button.ESCAPE.getId()) {
+                        fromStart = !fromStart;
+                    }
+                    LCD.drawString("<> LIMIT: " + limit + "   ", 0, 0);
+                    LCD.drawString("v START: " + fromStart + "   ", 0, 1);
+                    Delay.msDelay(400);
                 }
-                //LCD.clear();
-                LCD.drawString("< PANIC: " + panic + "   ", 0, 0);
-                LCD.drawString("> START: " + fromStart + "   ", 0, 1);
-                LCD.drawString("v SYM:   " + sym + "   ", 0, 2);
-                LCD.drawString("L BUMP:   " + bump + "   ", 0, 3);
-                Delay.msDelay(400);
+            } else {
+                Delay.msDelay(500);
+                LCD.drawString("< SYM: " + sym + "   ", 0, 0);
+                LCD.drawString("> BUMP: " + bump + "   ", 0, 1);
+                while (Button.readButtons() != Button.ENTER.getId()) {
+                    if (Button.readButtons() == 0) {
+                        Delay.msDelay(20);
+                    }
+                    if (Button.readButtons() == Button.LEFT.getId()) {
+                        sym = !sym;
+                    }
+                    if (Button.readButtons() == Button.RIGHT.getId()) {
+                        bump = !bump;
+                    }
+                    LCD.drawString("< SYM: " + sym + "   ", 0, 0);
+                    LCD.drawString("> BUMP: " + bump + "   ", 0, 1);
+                    Delay.msDelay(400);
+                }
             }
             e.setSymmetry(sym);
         }
-        Controller c = ROBOT ? (new RobotController(e, panic, fromStart, bump))
-                : (new EmulatedController(e, "data/maps/s10.map"));
+        Controller c = ROBOT ? (new RobotController(e, panic, limit, fromStart, bump))
+                : (new EmulatedController(e, "data/maps/26.map"));
         go(e, c);
     }
 

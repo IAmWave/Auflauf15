@@ -60,8 +60,8 @@ public class RobotController implements Controller {
 
     Exploration exp;
     GoogleSorter sorter = new GoogleSorter();
-
-    public RobotController(Exploration exp, boolean panic, boolean fromStart, boolean bump) {
+    
+    public RobotController(Exploration exp, boolean panic, int limit, boolean fromStart, boolean bump) {
         this.BUMP = bump;
         magnet.setSpeed(magnet.getMaxSpeed() / 2);
         light.setFloodlight(false);
@@ -85,7 +85,7 @@ public class RobotController implements Controller {
         this.exp = exp;
         exp.print();
         if (panic) {
-            PanicController pc = new PanicController(this);
+            PanicController pc = new PanicController(this, limit);
             if (fromStart) {
                 pc.goUntilWall();
             }
