@@ -1,13 +1,10 @@
 
 import controller.Controller;
 import controller.EmulatedController;
-import controller.PanicController;
 import controller.RobotController;
 import lejos.nxt.Button;
 import lejos.nxt.LCD;
-import lejos.nxt.SensorPort;
 import lejos.nxt.Sound;
-import lejos.nxt.TouchSensor;
 import lejos.util.Delay;
 import model.Exploration;
 import model.Move;
